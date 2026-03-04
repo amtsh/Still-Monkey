@@ -22,7 +22,14 @@ struct ContentView: View {
             }
             Tab("Reels", systemImage: "play.fill", value: 1) {
                 NavigationStack {
-                    ReelsView(viewModel: viewModel)
+                    ReelsView(
+                        viewModel: viewModel,
+                        onBack: {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                selectedTab = 0
+                            }
+                        }
+                    )
                         .toolbar(.hidden, for: .navigationBar)
                 }
             }

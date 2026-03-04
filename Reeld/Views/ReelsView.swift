@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ReelsView: View {
     let viewModel: TopicViewModel
+    var onBack: (() -> Void)? = nil
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
 
@@ -130,6 +131,17 @@ struct ReelsView: View {
     private var topOverlay: some View {
         VStack(spacing: 10) {
             HStack {
+                Button {
+                    onBack?()
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: 28, height: 28)
+                        .background(.white.opacity(0.12), in: Circle())
+                }
+                .buttonStyle(.plain)
+
                 Text(viewModel.topic.isEmpty ? "Reels" : viewModel.topic)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
