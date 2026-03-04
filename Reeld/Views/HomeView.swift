@@ -9,8 +9,15 @@ import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
+    @State private var searchText = ""
+    var isSearchFocused: FocusState<Bool>.Binding
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
+    var onStartLearning: (() -> Void)? = nil
+
+    private var canStart: Bool {
+        !viewModel.isLoading && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     private var recentItems: [RecentContentSnapshot] {
         viewModel.recentItems
@@ -47,35 +54,40 @@ struct HomeView: View {
                 .padding(.bottom, 24)
             }
         }
-        .safeAreaInset(edge: .top) {
-            topHeader
+        .navigationTitle("Reeld")
+        .navigationBarTitleDisplayMode(.large)
+        .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
+        .searchFocused(isSearchFocused)
+        .onAppear {
+            searchText = viewModel.topic
+        }
+        .onChange(of: searchText) { _, newValue in
+            if viewModel.topic != newValue {
+                viewModel.topic = newValue
+            }
+        }
+        .onChange(of: viewModel.topic) { _, newValue in
+            if searchText != newValue {
+                searchText = newValue
+            }
+        }
+        .onSubmit(of: .search) {
+            startLearning()
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    HapticsFeedback.impactSoft()
+                    onOpenSettings?()
+                } label: {
+                    Image(systemName: "gear")
+                        .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Settings")
+            }
         }
         .preferredColorScheme(.dark)
-    }
-
-    private var topHeader: some View {
-        HStack {
-            Text("Reeld")
-                .font(.largeTitle.bold())
-                .foregroundStyle(.white)
-            Spacer()
-            Button {
-                HapticsFeedback.impactSoft()
-                onOpenSettings?()
-            } label: {
-                Image(systemName: "gear")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .frame(width: 36, height: 36)
-                    .glassBackground(in: Circle(), interactive: true)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Settings")
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 6)
-        .padding(.bottom, 10)
-        .background(.black.opacity(0.94))
     }
 
     private var heroCard: some View {
@@ -114,7 +126,7 @@ struct HomeView: View {
             ("earlier", "Earlier", earlierItems),
         ]
 
-      return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 14) {
             ForEach(sections, id: \.id) { section in
                 groupedRecentSection(title: section.title, items: section.items)
             }
@@ -147,7 +159,7 @@ struct HomeView: View {
         Button {
             openRecent(item)
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 Text(item.displayTopic)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.92))
@@ -171,8 +183,9 @@ struct HomeView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.35))
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .frame(minHeight: 44)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
@@ -182,5 +195,12 @@ struct HomeView: View {
         HapticsFeedback.impactSoft()
         viewModel.loadRecentSnapshot(snapshot)
         onOpenFeed?()
+    }
+
+    private func startLearning() {
+        guard canStart else { return }
+        isSearchFocused.wrappedValue = false
+        HapticsFeedback.impactMedium()
+        onStartLearning?()
     }
 }

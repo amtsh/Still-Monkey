@@ -7,7 +7,7 @@ struct SettingsStatusBadge: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(isConfigured ? .green : .orange)
-                .frame(width: 7, height: 7)
+                .frame(width: UIStatusIndicator.dot, height: UIStatusIndicator.dot)
                 .shadow(color: isConfigured ? .green.opacity(0.6) : .orange.opacity(0.5), radius: 4)
 
             Text(isConfigured ? "API token configured" : "API token required")
@@ -46,7 +46,7 @@ struct SettingsHelpRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 14))
+                .font(.system(size: UIIconSize.inline))
                 .foregroundStyle(isLink ? .blue : .white.opacity(0.35))
                 .frame(width: 20)
             Text(text)
@@ -55,7 +55,7 @@ struct SettingsHelpRow: View {
             Spacer()
             if isLink {
                 Image(systemName: "chevron.right")
-                    .font(.caption2)
+                    .font(.caption.weight(.semibold))
                     .foregroundStyle(.blue.opacity(0.5))
             }
         }

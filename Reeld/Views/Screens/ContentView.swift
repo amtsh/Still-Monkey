@@ -15,33 +15,33 @@ struct ContentView: View {
         NavigationStack(path: $path) {
             HomeView(
                 viewModel: viewModel,
+                isSearchFocused: $isSearchFocused,
                 onOpenSettings: {
                     isShowingSettings = true
                 },
                 onOpenFeed: {
                     isSearchFocused = false
                     showReelsIfNeeded()
+                },
+                onStartLearning: {
+                    isSearchFocused = false
+                    generationRequestID = UUID()
                 }
             )
-            .toolbar(.hidden, for: .navigationBar)
             .safeAreaInset(edge: .bottom) {
                 if path.isEmpty {
-                    FloatingSearchBar(viewModel: viewModel, isSearchFocused: $isSearchFocused) {
-                        generationRequestID = UUID()
-                    }
+                    FloatingSearchBar(viewModel: viewModel)
                 }
             }
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .reels:
                     ReelsView(viewModel: viewModel)
-                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
             .sheet(isPresented: $isShowingSettings) {
                 NavigationStack {
                     SettingsView()
-                        .toolbar(.hidden, for: .navigationBar)
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)

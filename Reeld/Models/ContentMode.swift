@@ -11,7 +11,7 @@ enum ContentMode: String, CaseIterable, Codable {
     var composerPlaceholder: String {
         switch self {
         case .learn:
-            return "Learn something new today."
+            return "Search topic"
         case .story:
             return "Pick a topic for your next story."
         }

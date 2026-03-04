@@ -6,12 +6,10 @@
 //
 
 import SwiftUI
-import UIKit
 
 struct ReelsView: View {
     @Environment(\.dismiss) private var dismiss
     let viewModel: TopicViewModel
-    var onBack: (() -> Void)? = nil
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
 
@@ -42,14 +40,12 @@ struct ReelsView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
-        .safeAreaInset(edge: .top) {
-            topOverlay
-        }
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: currentID) { oldValue, newValue in
             guard oldValue != nil, newValue != oldValue else { return }
             HapticsFeedback.impactSoft()
         }
-        .background(InteractivePopGestureEnabler())
     }
 
     // MARK: – Feed
@@ -117,7 +113,7 @@ struct ReelsView: View {
                     .foregroundStyle(.white.opacity(0.55))
             } else if let error = viewModel.error {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 46))
+                    .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(.orange.opacity(0.7))
                 Text(error)
                     .font(.subheadline)
@@ -130,7 +126,7 @@ struct ReelsView: View {
                 secondaryButton(title: "Back", action: handleBack)
             } else {
                 Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
-                    .font(.system(size: 56))
+                    .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(.white.opacity(0.15))
                 Text(viewModel.contentMode.emptyStateMessage)
                     .font(.headline)
@@ -146,36 +142,6 @@ struct ReelsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-    }
-
-    private var topOverlay: some View {
-        VStack(spacing: 10) {
-            HStack {
-                Button {
-                    handleBack()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(width: 28, height: 28)
-                        .glassBackground(in: Circle(), interactive: true)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Back")
-
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
-        .padding(.bottom, 10)
-        .background(
-            LinearGradient(
-                colors: [.black.opacity(0.55), .black.opacity(0.12), .clear],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
 
     @ViewBuilder
@@ -207,40 +173,6 @@ struct ReelsView: View {
     }
 
     private func handleBack() {
-        if let onBack {
-            onBack()
-        } else {
-            dismiss()
-        }
-    }
-}
-
-private struct InteractivePopGestureEnabler: UIViewRepresentable {
-    func makeUIView(context: Context) -> PopGestureHostView {
-        PopGestureHostView()
-    }
-
-    func updateUIView(_ uiView: PopGestureHostView, context: Context) {
-        DispatchQueue.main.async {
-            uiView.enableInteractivePopIfPossible()
-        }
-    }
-}
-
-private final class PopGestureHostView: UIView {
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        enableInteractivePopIfPossible()
-    }
-
-    func enableInteractivePopIfPossible() {
-        guard let navigationController = nearestViewController?.navigationController else { return }
-        let popGesture = navigationController.interactivePopGestureRecognizer
-        popGesture?.isEnabled = navigationController.viewControllers.count > 1
-        popGesture?.delegate = nil
-    }
-
-    private var nearestViewController: UIViewController? {
-        sequence(first: next, next: { $0?.next }).first { $0 is UIViewController } as? UIViewController
+        dismiss()
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage(Config.apiKeyUserDefaultsKey) private var apiKey: String = ""
     @State private var isTokenVisible = false
     @State private var showClearConfirm = false
@@ -23,22 +24,23 @@ struct SettingsView: View {
                 .padding(.bottom, 24)
             }
         }
-        .safeAreaInset(edge: .top) {
-            topHeader
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .frame(width: UITouchTarget.minimum, height: UITouchTarget.minimum)
+                        .glassBackground(in: Circle(), interactive: true)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Close settings")
+            }
         }
-    }
-
-    private var topHeader: some View {
-        HStack {
-            Text("Settings")
-                .font(.largeTitle.bold())
-                .foregroundStyle(.white)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 6)
-        .padding(.bottom, 10)
-        .background(.black.opacity(0.94))
     }
 
     private var apiKeySection: some View {
@@ -50,7 +52,7 @@ struct SettingsView: View {
             HStack(spacing: 6) {
                 Circle()
                     .fill(isConfigured ? .green : .orange)
-                    .frame(width: 6, height: 6)
+                    .frame(width: UIStatusIndicator.dot, height: UIStatusIndicator.dot)
                 Text(isConfigured ? "Configured" : "Required")
                     .font(.caption)
                     .foregroundStyle(isConfigured ? .green : .orange)
@@ -95,9 +97,9 @@ struct SettingsView: View {
                     isTokenVisible.toggle()
                 } label: {
                     Image(systemName: isTokenVisible ? "eye.slash" : "eye")
-                        .font(.system(size: 14))
+                        .font(.system(size: UIIconSize.inline))
                         .foregroundStyle(.white.opacity(0.35))
-                        .frame(width: 44, height: 44)
+                        .frame(width: UITouchTarget.minimum, height: UITouchTarget.minimum)
                 }
             }
             .padding(.trailing, 4)
@@ -110,7 +112,7 @@ struct SettingsView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "trash")
-                    .font(.system(size: 13))
+                    .font(.system(size: UIIconSize.inline))
                 Text("Remove token")
                     .font(.subheadline)
             }
