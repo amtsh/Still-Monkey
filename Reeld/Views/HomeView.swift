@@ -111,14 +111,16 @@ struct HomeView: View {
     }
 
     private var recentItemsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Today")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white)
+        let sections: [(id: String, title: String, items: [RecentContentSnapshot])] = [
+            ("today", "Today", todayItems),
+            ("yesterday", "Yesterday", yesterdayItems),
+            ("earlier", "Earlier", earlierItems),
+        ]
 
-            groupedRecentSection(title: "", items: todayItems)
-            groupedRecentSection(title: "Yesterday", items: yesterdayItems)
-            groupedRecentSection(title: "Earlier", items: earlierItems)
+        VStack(alignment: .leading, spacing: 14) {
+            ForEach(sections, id: \.id) { section in
+                groupedRecentSection(title: section.title, items: section.items)
+            }
         }
     }
 
@@ -126,11 +128,9 @@ struct HomeView: View {
     private func groupedRecentSection(title: String, items: [RecentContentSnapshot]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                if !title.isEmpty {
-                    Text(title)
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.white)
-                }
+                Text(title)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white)
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
