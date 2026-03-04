@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		8D16B18F2F5882C900FBE8BA /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 8D16B18E2F5882C900FBE8BA /* Lottie */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8DA588402F57C12800776E02 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -65,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D16B18F2F5882C900FBE8BA /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +130,7 @@
 			);
 			name = Reeld;
 			packageProductDependencies = (
+				8D16B18E2F5882C900FBE8BA /* Lottie */,
 			);
 			productName = Reeld;
 			productReference = 8DA5882E2F57C12700776E02 /* Reeld.app */;
@@ -208,6 +214,9 @@
 			);
 			mainGroup = 8DA588252F57C12700776E02;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8D16B18D2F5882C900FBE8BA /* XCRemoteSwiftPackageReference "lottie-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8DA5882F2F57C12700776E02 /* Products */;
 			projectDirPath = "";
@@ -595,6 +604,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8D16B18D2F5882C900FBE8BA /* XCRemoteSwiftPackageReference "lottie-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8D16B18E2F5882C900FBE8BA /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8D16B18D2F5882C900FBE8BA /* XCRemoteSwiftPackageReference "lottie-ios" */;
+			productName = Lottie;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8DA588262F57C12700776E02 /* Project object */;
 }

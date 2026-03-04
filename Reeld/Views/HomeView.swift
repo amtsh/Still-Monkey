@@ -42,6 +42,19 @@ struct HomeView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
+            LinearGradient(
+                colors: [
+                    Color(red: 1.00, green: 0.75, blue: 0.80).opacity(0.24),
+                    .clear,
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(maxHeight: 260)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     heroCard
@@ -83,31 +96,45 @@ struct HomeView: View {
     }
 
     private var heroCard: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Heal from doomscrolling")
-                .font(.system(size: 28, weight: .bold))
-                .multilineTextAlignment(.leading)
-                .lineSpacing(2)
-                .minimumScaleFactor(0.85)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 1.00, green: 0.63, blue: 0.71),
-                            Color(red: 0.83, green: 0.56, blue: 1.00),
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+        GeometryReader { proxy in
+            let contentWidth = max(proxy.size.width - 40, 0)
+            let leftWidth = contentWidth * 0.7
+            let rightWidth = contentWidth * 0.3
 
-            Text("Build better attention with bite-sized microlearning reels.")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white.opacity(0.78))
-                .lineSpacing(2)
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Heal from doomscrolling")
+                        .font(.system(size: 24, weight: .semibold))
+                        .multilineTextAlignment(.leading)
+                        .lineSpacing(2)
+                        .minimumScaleFactor(0.85)
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 1.00, green: 0.85, blue: 0.70),
+                                    Color(red: 1.00, green: 0.75, blue: 0.50),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+
+                    Text("Byte-sized microlearning that fits your scroll habit.")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .lineSpacing(2)
+                }
+                .frame(width: leftWidth, alignment: .leading)
+
+                LottieView(name: "flower_plant", speed: 0.9)
+                    .frame(width: rightWidth, height: proxy.size.height - 40)
+                    .opacity(0.95)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 24)
+            .padding(.bottom, 24)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 22)
+        .frame(height: 210)
         .glassCard(cornerRadius: 24)
     }
 
@@ -155,14 +182,13 @@ struct HomeView: View {
             openRecent(item)
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: symbolName(for: item.displayTopic))
-                    .font(.system(size: 20, weight: .medium))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(symbolColor(for: item.displayTopic))
+                Image(systemName: "book")
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.7))
                     .frame(width: 24)
 
                 Text(item.displayTopic)
-                    .font(.body)
+                    .font(.system(size: 12, weight: .regular))
                     .foregroundStyle(.white.opacity(0.95))
                     .lineLimit(1)
 
@@ -197,85 +223,5 @@ struct HomeView: View {
         isSearchFocused.wrappedValue = false
         HapticsFeedback.impactMedium()
         onStartLearning?()
-    }
-
-    private func symbolName(for title: String) -> String {
-        let key = title.lowercased()
-
-        if key.contains("ai") || key.contains("ml") || key.contains("model") || key.contains("neural") {
-            return "cpu"
-        }
-        if key.contains("code") || key.contains("program") || key.contains("swift") || key.contains("dev") {
-            return "chevron.left.forwardslash.chevron.right"
-        }
-        if key.contains("design") || key.contains("ui") || key.contains("ux") {
-            return "paintpalette"
-        }
-        if key.contains("finance") || key.contains("money") || key.contains("invest") || key.contains("stock") {
-            return "dollarsign.circle"
-        }
-        if key.contains("health") || key.contains("fitness") || key.contains("wellness") {
-            return "heart.text.square"
-        }
-        if key.contains("history") || key.contains("culture") || key.contains("society") {
-            return "book.closed"
-        }
-        if key.contains("science") || key.contains("physics") || key.contains("chem") || key.contains("bio") {
-            return "atom"
-        }
-        if key.contains("space") || key.contains("astronomy") {
-            return "moon.stars"
-        }
-        if key.contains("business") || key.contains("strategy") || key.contains("startup") {
-            return "briefcase"
-        }
-        if key.contains("music") || key.contains("song") {
-            return "music.note"
-        }
-        if key.contains("art") || key.contains("photo") {
-            return "photo"
-        }
-
-        return "sparkles"
-    }
-
-    private func symbolColor(for title: String) -> Color {
-        let key = title.lowercased()
-
-        if key.contains("ai") || key.contains("ml") || key.contains("model") || key.contains("neural") {
-            return .cyan
-        }
-        if key.contains("code") || key.contains("program") || key.contains("swift") || key.contains("dev") {
-            return .blue
-        }
-        if key.contains("design") || key.contains("ui") || key.contains("ux") {
-            return .mint
-        }
-        if key.contains("finance") || key.contains("money") || key.contains("invest") || key.contains("stock") {
-            return .green
-        }
-        if key.contains("health") || key.contains("fitness") || key.contains("wellness") {
-            return .pink
-        }
-        if key.contains("history") || key.contains("culture") || key.contains("society") {
-            return .orange
-        }
-        if key.contains("science") || key.contains("physics") || key.contains("chem") || key.contains("bio") {
-            return .purple
-        }
-        if key.contains("space") || key.contains("astronomy") {
-            return .indigo
-        }
-        if key.contains("business") || key.contains("strategy") || key.contains("startup") {
-            return .teal
-        }
-        if key.contains("music") || key.contains("song") {
-            return .yellow
-        }
-        if key.contains("art") || key.contains("photo") {
-            return .red
-        }
-
-        return .cyan
     }
 }
