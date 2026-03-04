@@ -67,7 +67,7 @@ struct HomeView: View {
                 .padding(.bottom, 24)
             }
         }
-        .navigationTitle("Reeld")
+        .navigationTitle("Still Monkey")
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
         .searchFocused(isSearchFocused)
@@ -103,7 +103,7 @@ struct HomeView: View {
 
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 14) {
-                    Text("Heal from doomscrolling")
+                    Text("Feed your curiosity.")
                         .font(.system(size: 24, weight: .semibold))
                         .multilineTextAlignment(.leading)
                         .lineSpacing(2)
@@ -119,7 +119,7 @@ struct HomeView: View {
                             )
                         )
 
-                    Text("Byte-sized microlearning that fits your scroll habit.")
+                    Text("Learn something real.")
                         .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(.white.opacity(0.78))
                         .lineSpacing(2)
