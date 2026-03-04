@@ -11,6 +11,8 @@ struct ReelCardView: View {
     let currentIndex: Int
     let cardIndex: Int
     let totalCount: Int
+    let chapterTitle: String?
+    let topicTitle: String
 
     var body: some View {
         GeometryReader { proxy in
@@ -31,9 +33,14 @@ struct ReelCardView: View {
     private var cardContent: some View {
         switch reel.content {
         case let .chapterTitle(index, title):
-            ChapterTitleCard(index: index, title: title)
+            ChapterTitleCard(index: index, title: title, topicTitle: topicTitle)
         case let .content(chapterIndex, text):
-            ContentCard(chapterIndex: chapterIndex, text: text)
+            ContentCard(
+                chapterIndex: chapterIndex,
+                chapterTitle: chapterTitle,
+                topicTitle: topicTitle,
+                text: text
+            )
         }
     }
 
@@ -55,6 +62,7 @@ struct ReelCardView: View {
 private struct ChapterTitleCard: View {
     let index: Int
     let title: String
+    let topicTitle: String
     @State private var appeared = false
 
     private var accent: Color {
@@ -90,6 +98,12 @@ private struct ChapterTitleCard: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
                     .minimumScaleFactor(0.8)
+
+                Text(topicTitle)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.62))
+                    .lineLimit(1)
+                    .padding(.horizontal, 32)
             }
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 20)
@@ -105,6 +119,8 @@ private struct ChapterTitleCard: View {
 
 private struct ContentCard: View {
     let chapterIndex: Int
+    let chapterTitle: String?
+    let topicTitle: String
     let text: String
     @State private var appeared = false
 
@@ -139,6 +155,22 @@ private struct ContentCard: View {
                     .offset(y: appeared ? 0 : 18)
 
                 Spacer()
+            }
+            .overlay(alignment: .bottomLeading) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(chapterIndex). \(chapterTitle ?? "Chapter \(chapterIndex)")")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.62))
+                        .lineLimit(1)
+                    Text(topicTitle)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.48))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 110)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 12)
             }
         }
         .onAppear {

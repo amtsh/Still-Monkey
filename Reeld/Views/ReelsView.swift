@@ -13,7 +13,7 @@ struct ReelsView: View {
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
 
-    private var topTitle: String {
+    private var topicTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
         return rawTitle.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
     }
@@ -21,6 +21,15 @@ struct ReelsView: View {
     private var currentIndex: Int {
         guard let id = currentID else { return 0 }
         return viewModel.reels.firstIndex(where: { $0.id == id }) ?? 0
+    }
+
+    private var chapterTitlesByIndex: [Int: String] {
+        Dictionary(
+            uniqueKeysWithValues: viewModel.reels.compactMap { reel in
+                guard case let .chapterTitle(index, title) = reel.content else { return nil }
+                return (index, title)
+            }
+        )
     }
 
     var body: some View {
@@ -60,7 +69,9 @@ struct ReelsView: View {
                             reel: reel,
                             currentIndex: currentIndex,
                             cardIndex: offset,
-                            totalCount: viewModel.reels.count
+                            totalCount: viewModel.reels.count,
+                            chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
+                            topicTitle: topicTitle
                         )
 
                         if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
@@ -179,13 +190,6 @@ struct ReelsView: View {
                 .buttonStyle(.plain)
 
                 Spacer()
-            }
-            .overlay {
-                Text(topTitle)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
-                    .padding(.horizontal, 44)
             }
         }
         .padding(.horizontal, 16)
