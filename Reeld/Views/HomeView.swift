@@ -67,7 +67,7 @@ struct HomeView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .frame(width: 36, height: 36)
-                    .background(.white.opacity(0.1), in: Circle())
+                    .glassBackground(in: Circle(), interactive: true)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Settings")
@@ -104,11 +104,7 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.vertical, 22)
-        .background(.white.opacity(0.06), in: .rect(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(.white.opacity(0.09), lineWidth: 1)
-        )
+        .glassCard(cornerRadius: 20)
     }
 
     private var recentItemsSection: some View {
@@ -142,11 +138,7 @@ struct HomeView: View {
                         }
                     }
                 }
-                .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
-                )
+                .glassCard(cornerRadius: 14)
             }
         }
     }
@@ -169,7 +161,7 @@ struct HomeView: View {
                         .foregroundStyle(.white.opacity(0.72))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
-                        .background(.white.opacity(0.1), in: Capsule())
+                        .glassBackground(in: Capsule())
                 }
 
                 Image(systemName: "chevron.right")

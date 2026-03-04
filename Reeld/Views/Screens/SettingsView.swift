@@ -63,19 +63,14 @@ struct SettingsView: View {
                     clearRow
                 }
             }
-            .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(isConfigured ? Color.green.opacity(0.2) : Color.white.opacity(0.08), lineWidth: 1)
-            )
+            .modifier(SettingsSectionGlassModifier(cornerRadius: 14, isConfigured: isConfigured))
 
             Text("Stored locally on this device.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
         }
         .padding(16)
-        .background(.white.opacity(0.05), in: .rect(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.08), lineWidth: 1))
+        .glassCard(cornerRadius: 14)
     }
 
     private var tokenField: some View {
@@ -154,7 +149,6 @@ struct SettingsView: View {
             }
         }
         .padding(16)
-        .background(.white.opacity(0.05), in: .rect(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(.white.opacity(0.08), lineWidth: 1))
+        .glassCard(cornerRadius: 14)
     }
 }

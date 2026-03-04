@@ -125,20 +125,10 @@ struct ReelsView: View {
                     .foregroundStyle(.white.opacity(0.55))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
-                Button("Retry") {
-                    Task {
-                        await viewModel.generateContent()
-                    }
+                primaryButton(title: "Retry", disabled: viewModel.isLoading) {
+                    Task { await viewModel.generateContent() }
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.white)
-                .foregroundStyle(.black)
-                .disabled(viewModel.isLoading)
-                Button("Back") {
-                    handleBack()
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white.opacity(0.7))
+                secondaryButton(title: "Back", action: handleBack)
             } else {
                 Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
                     .font(.system(size: 56))
@@ -148,21 +138,11 @@ struct ReelsView: View {
                     .foregroundStyle(.white.opacity(0.35))
                 HStack(spacing: 14) {
                     if !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Button("Retry") {
-                            Task {
-                                await viewModel.generateContent()
-                            }
+                        primaryButton(title: "Retry", disabled: viewModel.isLoading) {
+                            Task { await viewModel.generateContent() }
                         }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.white)
-                        .foregroundStyle(.black)
-                        .disabled(viewModel.isLoading)
                     }
-                    Button("Back") {
-                        handleBack()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.white.opacity(0.7))
+                    secondaryButton(title: "Back", action: handleBack)
                 }
             }
         }
@@ -179,7 +159,7 @@ struct ReelsView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.9))
                         .frame(width: 28, height: 28)
-                        .background(.white.opacity(0.12), in: Circle())
+                        .glassBackground(in: Circle(), interactive: true)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Back")
@@ -197,6 +177,34 @@ struct ReelsView: View {
                 endPoint: .bottom
             )
         )
+    }
+
+    @ViewBuilder
+    private func primaryButton(title: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
+        if #available(iOS 26, *) {
+            Button(title, action: action)
+                .buttonStyle(.glassProminent)
+                .disabled(disabled)
+        } else {
+            Button(title, action: action)
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
+                .foregroundStyle(.black)
+                .disabled(disabled)
+        }
+    }
+
+    @ViewBuilder
+    private func secondaryButton(title: String, action: @escaping () -> Void) -> some View {
+        if #available(iOS 26, *) {
+            Button(title, action: action)
+                .buttonStyle(.glass)
+                .foregroundStyle(.white.opacity(0.7))
+        } else {
+            Button(title, action: action)
+                .buttonStyle(.plain)
+                .foregroundStyle(.white.opacity(0.7))
+        }
     }
 
     private func handleBack() {

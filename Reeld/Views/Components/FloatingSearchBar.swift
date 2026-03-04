@@ -33,8 +33,7 @@ struct FloatingSearchBar: View {
                 .foregroundStyle(.white.opacity(0.9))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 8)
-                .background(.white.opacity(0.12), in: Capsule())
-                .overlay(Capsule().stroke(.white.opacity(0.1), lineWidth: 1))
+                .glassBackground(in: Capsule(), interactive: true)
             }
             .buttonStyle(.plain)
 
@@ -58,10 +57,7 @@ struct FloatingSearchBar: View {
                     }
                     .foregroundStyle(.black)
                     .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(canStart ? .white.opacity(0.78) : .white.opacity(0.3))
-                    )
+                    .modifier(SubmitButtonBackgroundModifier(enabled: canStart))
                 }
                 .disabled(!canStart)
                 .buttonStyle(.plain)
@@ -71,6 +67,7 @@ struct FloatingSearchBar: View {
             .padding(.leading, 14)
             .padding(.trailing, 8)
             .padding(.vertical, 7)
+            .glassBackground(in: Capsule())
             .overlay(
                 Capsule().stroke(.white.opacity(0.55), lineWidth: 1.4)
             )
