@@ -46,20 +46,20 @@ final class TopicViewModel {
         chapterCount = 0
 
         let systemPrompt = """
-        You are a concise educational assistant. Break the topic into exactly 4 chapters.
+        You are a concise educational assistant. Break the topic into many chapters.
         Format your ENTIRE response exactly like this template with no preamble or extra text:
 
         CHAPTER: Chapter Title Here
-        - Key concept explained in 20 words or less
-        - Another key concept in 20 words or less
-        - Third key concept in 20 words or less
+        - Key concept explained in 50 words or less
+        - Another key concept in 50 words or less
+        - Third key concept in 50 words or less
 
         CHAPTER: Second Chapter Title
-        - First point in 20 words or less
-        - Second point in 20 words or less
-        - Third point in 20 words or less
+        - First point in 50 words or less
+        - Second point in 50 words or less
+        - Third point in 50 words or less
 
-        Every chapter must have exactly 3 bullet points starting with "- ".
+        Every chapter must have exactly 10 bullet points starting with "- ".
         Do not include any other text outside this format.
         """
 

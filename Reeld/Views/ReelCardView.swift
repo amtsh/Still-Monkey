@@ -159,11 +159,13 @@ private struct ContentCard: View {
                 Spacer()
 
                 Text(text)
-                    .font(.system(size: 33, weight: .bold, design: .rounded))
+                    .font(.system(size: 25, weight: .semibold, design: .rounded))
                     .foregroundStyle(.white)
-                    .lineSpacing(8)
+                    .lineSpacing(5)
                     .padding(.horizontal, 28)
                     .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.75)
+                    .fixedSize(horizontal: false, vertical: true)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 18)
 

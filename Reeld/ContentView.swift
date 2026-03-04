@@ -14,13 +14,24 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Learn", systemImage: "sparkles", value: 0) {
-                HomeView(viewModel: viewModel)
+                NavigationStack {
+                    HomeView(viewModel: viewModel)
+                        .navigationTitle("Reeld")
+                        .navigationBarTitleDisplayMode(.large)
+                }
             }
             Tab("Reels", systemImage: "play.fill", value: 1) {
-                ReelsView(viewModel: viewModel)
+                NavigationStack {
+                    ReelsView(viewModel: viewModel)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
             }
             Tab("Settings", systemImage: "gearshape.fill", value: 2) {
-                SettingsView()
+                NavigationStack {
+                    SettingsView()
+                        .navigationTitle("Reeld")
+                        .navigationBarTitleDisplayMode(.large)
+                }
             }
         }
         .tint(.white)

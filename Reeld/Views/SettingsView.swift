@@ -13,7 +13,6 @@ struct SettingsView: View {
     @State private var showClearConfirm = false
 
     private var isConfigured: Bool { !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-    private var clipboardString: String? { UIPasteboard.general.string }
 
     var body: some View {
         ZStack {
@@ -21,7 +20,6 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    wordmark
                     introSection
                     statusBadge
                     apiKeySection
@@ -35,18 +33,6 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: – Wordmark
-
-    private var wordmark: some View {
-        HStack {
-            Text("reeld")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .tracking(2)
-                .foregroundStyle(.white.opacity(0.9))
-            Spacer()
-        }
-    }
-    
     private var introSection: some View {
         Text("Connect your OpenRouter API key to generate learning reels. Your key stays on this device.")
             .font(.subheadline)
@@ -141,23 +127,6 @@ struct SettingsView: View {
             .padding(.vertical, 15)
 
             HStack(spacing: 4) {
-                if let clipboard = clipboardString, !clipboard.isEmpty, clipboard != apiKey {
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                            apiKey = clipboard
-                        }
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    } label: {
-                        Text("Paste")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.white.opacity(0.5))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(.white.opacity(0.1), in: Capsule())
-                    }
-                }
-
                 Button {
                     isTokenVisible.toggle()
                 } label: {

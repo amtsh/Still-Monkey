@@ -34,7 +34,7 @@ struct ReelsView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
-        .toolbar(.hidden, for: .tabBar)
+        .toolbar(viewModel.reels.isEmpty ? .visible : .hidden, for: .tabBar)
         .safeAreaInset(edge: .top) {
             if !viewModel.reels.isEmpty {
                 topOverlay
