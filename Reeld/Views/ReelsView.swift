@@ -13,6 +13,11 @@ struct ReelsView: View {
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
 
+    private var topTitle: String {
+        let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
+        return rawTitle.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
+    }
+
     private var currentIndex: Int {
         guard let id = currentID else { return 0 }
         return viewModel.reels.firstIndex(where: { $0.id == id }) ?? 0
@@ -152,7 +157,7 @@ struct ReelsView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text(viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic)
+                Text(topTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .lineLimit(1)
