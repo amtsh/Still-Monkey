@@ -38,7 +38,9 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     heroCard
-                    recentItemsSection
+                    if !recentItems.isEmpty {
+                        recentItemsSection
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
@@ -114,28 +116,9 @@ struct HomeView: View {
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
 
-            if recentItems.isEmpty {
-                HStack(spacing: 10) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.3))
-                    Text("No recent topics yet. Generate one to see it here.")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 14)
-                .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
-                )
-            } else {
-                groupedRecentSection(title: "", items: todayItems)
-                groupedRecentSection(title: "Yesterday", items: yesterdayItems)
-                groupedRecentSection(title: "Earlier", items: earlierItems)
-            }
+            groupedRecentSection(title: "", items: todayItems)
+            groupedRecentSection(title: "Yesterday", items: yesterdayItems)
+            groupedRecentSection(title: "Earlier", items: earlierItems)
         }
     }
 
