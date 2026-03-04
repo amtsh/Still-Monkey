@@ -13,6 +13,9 @@ struct ReelProgressBar: View {
             }
         }
         .padding(.horizontal, 16)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Progress")
+        .accessibilityValue("Card \(currentIndex + 1) of \(totalSegments)")
     }
 
     private func segmentColor(at index: Int) -> Color {

@@ -65,11 +65,12 @@ struct FloatingSearchBar: View {
                 }
                 .disabled(!canStart)
                 .buttonStyle(.plain)
+                .accessibilityLabel("Start")
+                .accessibilityHint("Generate reels for this topic")
             }
             .padding(.leading, 14)
             .padding(.trailing, 8)
             .padding(.vertical, 7)
-            .background(.clear, in: Capsule())
             .overlay(
                 Capsule().stroke(.white.opacity(0.55), lineWidth: 1.4)
             )

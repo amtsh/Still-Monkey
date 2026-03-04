@@ -18,6 +18,15 @@ final class TopicViewModel {
     var error: String?
     var recentItems: [RecentContentSnapshot] = []
 
+    var chapterTitlesByIndex: [Int: String] {
+        Dictionary(
+            uniqueKeysWithValues: reels.compactMap { reel in
+                guard case let .chapterTitle(index, title) = reel.content else { return nil }
+                return (index, title)
+            }
+        )
+    }
+
     private let service = OpenRouterService()
     private var streamBuffer = ""
     private var parser = ReelContentParser()
@@ -61,7 +70,7 @@ final class TopicViewModel {
                 saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
             }
         } catch {
-            self.error = "Failed to generate content: \(error.localizedDescription)"
+            self.error = "Something went wrong. Please check your connection and try again."
         }
 
         isLoading = false

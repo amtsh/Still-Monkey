@@ -13,7 +13,7 @@ struct HomeView: View {
     var onOpenFeed: (() -> Void)? = nil
 
     private var recentItems: [RecentContentSnapshot] {
-        Array(viewModel.recentItems.prefix(10))
+        viewModel.recentItems
     }
 
     private var todayItems: [RecentContentSnapshot] {
@@ -60,7 +60,7 @@ struct HomeView: View {
                 .foregroundStyle(.white)
             Spacer()
             Button {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                HapticsFeedback.impactSoft()
                 onOpenSettings?()
             } label: {
                 Image(systemName: "gear")
@@ -70,6 +70,7 @@ struct HomeView: View {
                     .background(.white.opacity(0.1), in: Circle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 16)
         .padding(.top, 6)
@@ -183,7 +184,7 @@ struct HomeView: View {
     }
 
     private func openRecent(_ snapshot: RecentContentSnapshot) {
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        HapticsFeedback.impactSoft()
         viewModel.loadRecentSnapshot(snapshot)
         onOpenFeed?()
     }

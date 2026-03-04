@@ -25,15 +25,6 @@ struct ReelsView: View {
         return viewModel.reels.firstIndex(where: { $0.id == id }) ?? 0
     }
 
-    private var chapterTitlesByIndex: [Int: String] {
-        Dictionary(
-            uniqueKeysWithValues: viewModel.reels.compactMap { reel in
-                guard case let .chapterTitle(index, title) = reel.content else { return nil }
-                return (index, title)
-            }
-        )
-    }
-
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -56,7 +47,7 @@ struct ReelsView: View {
         }
         .onChange(of: currentID) { oldValue, newValue in
             guard oldValue != nil, newValue != oldValue else { return }
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            HapticsFeedback.impactSoft()
         }
         .background(InteractivePopGestureEnabler())
     }
@@ -73,7 +64,7 @@ struct ReelsView: View {
                             currentIndex: currentIndex,
                             cardIndex: offset,
                             totalCount: viewModel.reels.count,
-                            chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
+                            chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
                             topicTitle: topicTitle
                         )
 
@@ -191,6 +182,7 @@ struct ReelsView: View {
                         .background(.white.opacity(0.12), in: Circle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Back")
 
                 Spacer()
             }
