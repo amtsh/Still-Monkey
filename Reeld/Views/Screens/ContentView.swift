@@ -1,48 +1,41 @@
 import SwiftUI
 
 struct ContentView: View {
+    private enum Route: Hashable {
+        case reels
+    }
+
     @State private var viewModel = TopicViewModel()
-    @State private var isShowingFeed = false
+    @State private var path: [Route] = []
     @State private var isShowingSettings = false
     @State private var generationRequestID: UUID?
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                if isShowingFeed {
-                    ReelsView(
-                        viewModel: viewModel,
-                        onBack: {
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                isShowingFeed = false
-                            }
-                        }
-                    )
-                    .transition(.opacity)
-                } else {
-                    HomeView(
-                        viewModel: viewModel,
-                        onOpenSettings: {
-                            isShowingSettings = true
-                        },
-                        onOpenFeed: {
-                            isSearchFocused = false
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                isShowingFeed = true
-                            }
-                        }
-                    )
-                    .transition(.opacity)
+        NavigationStack(path: $path) {
+            HomeView(
+                viewModel: viewModel,
+                onOpenSettings: {
+                    isShowingSettings = true
+                },
+                onOpenFeed: {
+                    isSearchFocused = false
+                    showReelsIfNeeded()
                 }
-            }
+            )
             .toolbar(.hidden, for: .navigationBar)
-            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isShowingFeed)
             .safeAreaInset(edge: .bottom) {
-                if !isShowingFeed {
+                if path.isEmpty {
                     FloatingSearchBar(viewModel: viewModel, isSearchFocused: $isSearchFocused) {
                         generationRequestID = UUID()
                     }
+                }
+            }
+            .navigationDestination(for: Route.self) { route in
+                switch route {
+                case .reels:
+                    ReelsView(viewModel: viewModel)
+                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
             .sheet(isPresented: $isShowingSettings) {
@@ -60,13 +53,18 @@ struct ContentView: View {
             }
             .onChange(of: viewModel.isLoading) { _, isLoading in
                 if isLoading {
-                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                        isShowingFeed = true
-                    }
+                    showReelsIfNeeded()
                 }
             }
         }
         .preferredColorScheme(.dark)
+    }
+
+    private func showReelsIfNeeded() {
+        guard path.last != .reels else { return }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+            path.append(.reels)
+        }
     }
 }
 

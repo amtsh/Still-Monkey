@@ -6,8 +6,10 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ReelsView: View {
+    @Environment(\.dismiss) private var dismiss
     let viewModel: TopicViewModel
     var onBack: (() -> Void)? = nil
     @State private var currentID: Reel.ID?
@@ -56,6 +58,7 @@ struct ReelsView: View {
             guard oldValue != nil, newValue != oldValue else { return }
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         }
+        .background(InteractivePopGestureEnabler())
     }
 
     // MARK: – Feed
@@ -141,7 +144,7 @@ struct ReelsView: View {
                 .foregroundStyle(.black)
                 .disabled(viewModel.isLoading)
                 Button("Back") {
-                    onBack?()
+                    handleBack()
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.white.opacity(0.7))
@@ -165,7 +168,7 @@ struct ReelsView: View {
                         .disabled(viewModel.isLoading)
                     }
                     Button("Back") {
-                        onBack?()
+                        handleBack()
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white.opacity(0.7))
@@ -179,7 +182,7 @@ struct ReelsView: View {
         VStack(spacing: 10) {
             HStack {
                 Button {
-                    onBack?()
+                    handleBack()
                 } label: {
                     Image(systemName: "chevron.left")
                         .font(.subheadline.weight(.semibold))
@@ -202,5 +205,34 @@ struct ReelsView: View {
                 endPoint: .bottom
             )
         )
+    }
+
+    private func handleBack() {
+        if let onBack {
+            onBack()
+        } else {
+            dismiss()
+        }
+    }
+}
+
+private struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> PopGestureViewController {
+        PopGestureViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: PopGestureViewController, context: Context) {}
+}
+
+private final class PopGestureViewController: UIViewController, UIGestureRecognizerDelegate {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard let navigationController else { return }
+        navigationController.interactivePopGestureRecognizer?.isEnabled = true
+        navigationController.interactivePopGestureRecognizer?.delegate = self
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        (navigationController?.viewControllers.count ?? 0) > 1
     }
 }
