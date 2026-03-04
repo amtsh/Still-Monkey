@@ -1,3 +1,10 @@
+//
+//  ReelsView.swift
+//  Reeld
+//
+//  Created by Amit Shinde on 2026-03-04.
+//
+
 import SwiftUI
 
 struct ReelsView: View {
@@ -9,10 +16,6 @@ struct ReelsView: View {
     private var topTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
         return rawTitle.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
-    }
-
-    private var firstReelID: Reel.ID? {
-        viewModel.reels.first?.id
     }
 
     private var currentIndex: Int {
@@ -38,24 +41,29 @@ struct ReelsView: View {
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
         .safeAreaInset(edge: .top) {
-            if !viewModel.reels.isEmpty {
-                topOverlay
-            }
+            topOverlay
         }
         .onChange(of: currentID) { oldValue, newValue in
             guard oldValue != nil, newValue != oldValue else { return }
-            HapticsFeedback.impactSoft()
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         }
     }
+
+    // MARK: – Feed
 
     private var reelsFeed: some View {
         ScrollView(.vertical) {
             LazyVStack(spacing: 0) {
-                ForEach(viewModel.reels) { reel in
+                ForEach(Array(viewModel.reels.enumerated()), id: \.element.id) { offset, reel in
                     ZStack {
-                        ReelCardView(reel: reel)
+                        ReelCardView(
+                            reel: reel,
+                            currentIndex: currentIndex,
+                            cardIndex: offset,
+                            totalCount: viewModel.reels.count
+                        )
 
-                        if reel.id == firstReelID && !hasShownSwipeHint && viewModel.reels.count > 1 {
+                        if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
                             SwipeHintOverlay()
                                 .onAppear { hasShownSwipeHint = true }
                         }
@@ -70,21 +78,14 @@ struct ReelsView: View {
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
         .ignoresSafeArea()
-        .overlay(alignment: .bottom) {
-            ReelProgressBar(totalSegments: viewModel.reels.count, currentIndex: currentIndex)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-                .allowsHitTesting(false)
-        }
-        .onChange(of: viewModel.reels.count) { _, count in
-            if count == 0 {
-                currentID = nil
-                hasShownSwipeHint = false
-            } else if currentID == nil {
+        .onChange(of: viewModel.reels.count) { _, _ in
+            if currentID == nil {
                 currentID = viewModel.reels.first?.id
             }
         }
     }
+
+    // MARK: – Loading strip (shown while streaming continues)
 
     private var loadingStrip: some View {
         VStack {
@@ -98,6 +99,8 @@ struct ReelsView: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
+
+    // MARK: – Empty / loading state
 
     private var emptyState: some View {
         VStack(spacing: 20) {
@@ -126,6 +129,11 @@ struct ReelsView: View {
                 .tint(.white)
                 .foregroundStyle(.black)
                 .disabled(viewModel.isLoading)
+                Button("Back") {
+                    onBack?()
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white.opacity(0.7))
             } else {
                 Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
                     .font(.system(size: 56))
@@ -133,6 +141,24 @@ struct ReelsView: View {
                 Text(viewModel.contentMode.emptyStateMessage)
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.35))
+                HStack(spacing: 14) {
+                    if !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button("Retry") {
+                            Task {
+                                await viewModel.generateContent()
+                            }
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.white)
+                        .foregroundStyle(.black)
+                        .disabled(viewModel.isLoading)
+                    }
+                    Button("Back") {
+                        onBack?()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.white.opacity(0.7))
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)

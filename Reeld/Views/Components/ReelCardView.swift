@@ -8,14 +8,47 @@ private func chapterAccent(for chapterIndex: Int) -> Color {
 
 struct ReelCardView: View {
     let reel: Reel
+    let currentIndex: Int
+    let cardIndex: Int
+    let totalCount: Int
 
     var body: some View {
+        GeometryReader { proxy in
+            cardContent
+                .overlay(alignment: .bottom) {
+                    ReelProgressBar(totalSegments: totalCount, currentIndex: currentIndex)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
+                        .offset(y: reelBarOffset(for: proxy))
+                        .opacity(reelBarVisibility(for: proxy))
+                        .allowsHitTesting(false)
+                }
+                .clipped()
+        }
+    }
+
+    @ViewBuilder
+    private var cardContent: some View {
         switch reel.content {
         case .chapterTitle(let index, let title):
             ChapterTitleCard(index: index, title: title)
         case .content(let chapterIndex, let text):
             ContentCard(chapterIndex: chapterIndex, text: text)
         }
+    }
+
+    private func reelBarVisibility(for proxy: GeometryProxy) -> Double {
+        let minY = proxy.frame(in: .global).minY
+        let pageHeight = max(proxy.size.height, 1)
+        let restingMinY = CGFloat(cardIndex - currentIndex) * pageHeight
+        let distanceFromRest = abs(minY - restingMinY)
+        return min(max(distanceFromRest / 120, 0), 1)
+    }
+
+    private func reelBarOffset(for proxy: GeometryProxy) -> CGFloat {
+        let hiddenOffset: CGFloat = 36
+        let visibility = reelBarVisibility(for: proxy)
+        return hiddenOffset * (1 - visibility)
     }
 }
 
