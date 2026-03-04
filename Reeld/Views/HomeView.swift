@@ -76,35 +76,31 @@ struct HomeView: View {
     }
 
     private var heroCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Start Here")
-                .font(.title.weight(.bold))
-                .foregroundStyle(.white)
-
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Heal from\ndoomscrolling")
-                    .font(.system(size: 38, weight: .bold, design: .rounded))
-                    .multilineTextAlignment(.leading)
-                    .lineSpacing(2)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 1.00, green: 0.63, blue: 0.71),
-                                Color(red: 0.83, green: 0.56, blue: 1.00),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Heal from doomscrolling")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .multilineTextAlignment(.leading)
+                .lineSpacing(2)
+                .minimumScaleFactor(0.85)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 1.00, green: 0.63, blue: 0.71),
+                            Color(red: 0.83, green: 0.56, blue: 1.00),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                )
 
-                Text("... with microlearning")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.78))
-            }
+            Text("Build better attention with bite-sized microlearning reels.")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white.opacity(0.78))
+                .lineSpacing(2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 18)
-        .padding(.vertical, 20)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 22)
         .background(.white.opacity(0.06), in: .rect(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
