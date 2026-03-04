@@ -15,16 +15,17 @@ final class TopicViewModel {
     var reels: [Reel] = []
     var isLoading: Bool = false
     var error: String?
-    var recentTopics: [String] = []
+    var recentItems: [RecentContentSnapshot] = []
 
     private let service = OpenRouterService()
     private var streamBuffer = ""
     private var parser = ReelContentParser()
 
-    private static let recentTopicsKey = "recentTopics"
-    private static let maxRecentTopics = 5
+    private static let recentSnapshotsKey = "recentContentSnapshots"
+    private static let maxRecentItems = 10
+
     init() {
-        recentTopics = UserDefaults.standard.stringArray(forKey: Self.recentTopicsKey) ?? []
+        recentItems = loadRecentSnapshots()
     }
 
     func generateContent() async {
@@ -36,8 +37,6 @@ final class TopicViewModel {
             error = "Add your OpenRouter API key in Settings before generating."
             return
         }
-
-        saveRecentTopic(trimmedTopic)
 
         reels = []
         error = nil
@@ -57,6 +56,9 @@ final class TopicViewModel {
                 processBuffer()
             }
             flushBuffer()
+            if !reels.isEmpty {
+                saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
+            }
         } catch {
             self.error = "Failed to generate content: \(error.localizedDescription)"
         }
@@ -79,11 +81,53 @@ final class TopicViewModel {
         streamBuffer = ""
     }
 
-    private func saveRecentTopic(_ topic: String) {
-        var updated = recentTopics.filter { $0.lowercased() != topic.lowercased() }
-        updated.insert(topic, at: 0)
-        recentTopics = Array(updated.prefix(Self.maxRecentTopics))
-        UserDefaults.standard.set(recentTopics, forKey: Self.recentTopicsKey)
+    func loadRecentSnapshot(_ snapshot: RecentContentSnapshot) {
+        topic = snapshot.topic
+        contentMode = snapshot.mode
+        reels = snapshot.hydrateReels()
+        error = nil
+        isLoading = false
+        streamBuffer = ""
+        parser.reset()
+        saveRecentSnapshot(topic: snapshot.topic, mode: snapshot.mode, reels: reels)
+    }
+
+    private func loadRecentSnapshots() -> [RecentContentSnapshot] {
+        guard let data = UserDefaults.standard.data(forKey: Self.recentSnapshotsKey) else {
+            return []
+        }
+
+        do {
+            let snapshots = try JSONDecoder().decode([RecentContentSnapshot].self, from: data)
+            return Array(snapshots.prefix(Self.maxRecentItems))
+        } catch {
+            return []
+        }
+    }
+
+    private func saveRecentSnapshot(topic: String, mode: ContentMode, reels: [Reel]) {
+        let normalizedTopic = topic.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedTopic.isEmpty, !reels.isEmpty else { return }
+
+        let snapshot = RecentContentSnapshot(
+            topic: normalizedTopic,
+            mode: mode,
+            reels: reels.map(StoredReel.init(from:)),
+            updatedAt: .now
+        )
+
+        var updated = recentItems.filter {
+            !($0.topic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedTopic.lowercased() && $0.mode == mode)
+        }
+        updated.insert(snapshot, at: 0)
+        recentItems = Array(updated.prefix(Self.maxRecentItems))
+
+        do {
+            let data = try JSONEncoder().encode(recentItems)
+            UserDefaults.standard.set(data, forKey: Self.recentSnapshotsKey)
+        } catch {
+            return
+        }
     }
 
     private func processLine(_ line: String) {

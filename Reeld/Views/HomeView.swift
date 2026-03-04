@@ -9,20 +9,26 @@ import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
+    var onOpenFeed: (() -> Void)? = nil
     @FocusState private var isTextFieldFocused: Bool
 
     private var canStart: Bool {
         !viewModel.isLoading && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var recentItems: [RecentContentSnapshot] {
+        Array(viewModel.recentItems.prefix(10))
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                Spacer(minLength: 28)
+            VStack(spacing: 18) {
+                Spacer(minLength: 16)
                 heroSection
-                Spacer()
+                recentItemsSection
+                Spacer(minLength: 8)
                 bottomComposer
             }
             .padding(.horizontal, 16)
@@ -67,6 +73,72 @@ struct HomeView: View {
             Text("... with microlearning")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.78))
+        }
+    }
+
+    private var recentItemsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Recent")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white.opacity(0.55))
+                .textCase(.uppercase)
+                .tracking(0.8)
+                .padding(.horizontal, 2)
+
+            VStack(spacing: 0) {
+                if recentItems.isEmpty {
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.3))
+                        Text("No recent topics yet. Generate one to see it here.")
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.5))
+                        Spacer()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 14)
+                } else {
+                    ForEach(Array(recentItems.enumerated()), id: \.element.id) { index, item in
+                        Button {
+                            openRecent(item)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(item.displayTopic)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.92))
+                                    .lineLimit(1)
+
+                                Spacer()
+
+                                Text(item.modeLabel)
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.72))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
+                                    .background(.white.opacity(0.1), in: Capsule())
+
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.white.opacity(0.35))
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+
+                        if index < recentItems.count - 1 {
+                            Divider().background(.white.opacity(0.08))
+                        }
+                    }
+                }
+            }
+            .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(.white.opacity(0.08), lineWidth: 1)
+            )
         }
     }
 
@@ -148,5 +220,12 @@ struct HomeView: View {
         isTextFieldFocused = false
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         Task { await viewModel.generateContent() }
+    }
+
+    private func openRecent(_ snapshot: RecentContentSnapshot) {
+        isTextFieldFocused = false
+        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        viewModel.loadRecentSnapshot(snapshot)
+        onOpenFeed?()
     }
 }

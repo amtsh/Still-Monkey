@@ -15,7 +15,14 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab("Learn", systemImage: "sparkles", value: 0) {
                 NavigationStack {
-                    HomeView(viewModel: viewModel)
+                    HomeView(
+                        viewModel: viewModel,
+                        onOpenFeed: {
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                selectedTab = 1
+                            }
+                        }
+                    )
                         .toolbar(.hidden, for: .navigationBar)
                 }
             }

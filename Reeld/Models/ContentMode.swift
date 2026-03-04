@@ -1,6 +1,6 @@
 import Foundation
 
-enum ContentMode: String, CaseIterable {
+enum ContentMode: String, CaseIterable, Codable {
     case learn = "Learn"
     case story = "Story"
 
