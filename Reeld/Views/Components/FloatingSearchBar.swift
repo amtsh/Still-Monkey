@@ -4,7 +4,7 @@ struct FloatingSearchBar: View {
     @Bindable var viewModel: TopicViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .trailing, spacing: 12) {
             Menu {
                 ForEach(ContentMode.allCases, id: \.self) { mode in
                     Button {
@@ -30,7 +30,7 @@ struct FloatingSearchBar: View {
                 .glassBackground(in: Capsule())
             }
             .buttonStyle(.plain)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .trailing)
 
             if let error = viewModel.error {
                 Text(error)
@@ -39,7 +39,9 @@ struct FloatingSearchBar: View {
                     .padding(.leading, 6)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.horizontal, 28)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
     }
 }

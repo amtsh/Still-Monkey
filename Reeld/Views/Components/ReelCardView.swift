@@ -171,7 +171,7 @@ private struct ContentCard: View {
                         .lineLimit(1)
                 }
                 .padding(.horizontal, 28)
-                .padding(.bottom, 110)
+                .padding(.bottom, 72)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
             }
