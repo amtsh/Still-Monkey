@@ -1,14 +1,6 @@
-//
-//  SettingsView.swift
-//  Reeld
-//
-//  Created by Amit Shinde on 2026-03-04.
-//
-
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
     @AppStorage(Config.apiKeyUserDefaultsKey) private var apiKey: String = ""
     @State private var isTokenVisible = false
     @State private var showClearConfirm = false
@@ -24,7 +16,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
                     introSection
-                    statusBadge
+                    SettingsStatusBadge(isConfigured: isConfigured)
                     apiKeySection
                     helpSection
                     Spacer()
@@ -58,41 +50,9 @@ struct SettingsView: View {
             .foregroundStyle(.white.opacity(0.55))
     }
 
-    // MARK: – Status badge
-
-    private var statusBadge: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(isConfigured ? Color.green : Color.orange)
-                .frame(width: 7, height: 7)
-                .shadow(color: isConfigured ? .green.opacity(0.6) : .orange.opacity(0.5), radius: 4)
-
-            Text(isConfigured ? "API token configured" : "API token required")
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundStyle(isConfigured ? .green : .orange)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
-        .background(
-            (isConfigured ? Color.green : Color.orange).opacity(0.1),
-            in: Capsule()
-        )
-        .overlay(
-            Capsule().stroke(
-                (isConfigured ? Color.green : Color.orange).opacity(0.25),
-                lineWidth: 1
-            )
-        )
-        .contentTransition(.identity)
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isConfigured)
-    }
-
-    // MARK: – API key section
-
     private var apiKeySection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("OpenRouter API Key")
+            SettingsSectionHeader(title: "OpenRouter API Key")
 
             VStack(spacing: 0) {
                 tokenField
@@ -179,7 +139,7 @@ struct SettingsView: View {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     apiKey = ""
                 }
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                HapticsFeedback.impactMedium()
             }
             Button("Cancel", role: .cancel) {}
         } message: {
@@ -187,19 +147,17 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: – Help section
-
     private var helpSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionHeader("How to get your token")
+            SettingsSectionHeader(title: "How to get your token")
 
             VStack(spacing: 0) {
-                helpRow(icon: "1.circle.fill", text: "Sign in to openrouter.ai")
+                SettingsHelpRow(icon: "1.circle.fill", text: "Sign in to openrouter.ai")
                 Divider().background(.white.opacity(0.07))
-                helpRow(icon: "2.circle.fill", text: "Go to Settings → Keys")
+                SettingsHelpRow(icon: "2.circle.fill", text: "Go to Settings → Keys")
                 Divider().background(.white.opacity(0.07))
                 Link(destination: URL(string: "https://openrouter.ai/settings/keys")!) {
-                    helpRow(icon: "arrow.up.right.square", text: "Open OpenRouter API keys", isLink: true)
+                    SettingsHelpRow(icon: "arrow.up.right.square", text: "Open OpenRouter API keys", isLink: true)
                 }
             }
             .background(.white.opacity(0.05), in: .rect(cornerRadius: 14))
@@ -208,36 +166,5 @@ struct SettingsView: View {
                     .stroke(.white.opacity(0.07), lineWidth: 1)
             )
         }
-    }
-
-    // MARK: – Helpers
-
-    private func sectionHeader(_ title: String) -> some View {
-        Text(title)
-            .font(.footnote)
-            .bold()
-            .foregroundStyle(.white.opacity(0.45))
-            .textCase(.uppercase)
-            .tracking(0.8)
-    }
-
-    private func helpRow(icon: String, text: String, isLink: Bool = false) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(isLink ? .blue : .white.opacity(0.35))
-                .frame(width: 20)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(isLink ? .blue : .white.opacity(0.7))
-            Spacer()
-            if isLink {
-                Image(systemName: "chevron.right")
-                    .font(.caption2)
-                    .foregroundStyle(.blue.opacity(0.5))
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 13)
     }
 }

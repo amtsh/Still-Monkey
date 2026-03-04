@@ -8,8 +8,13 @@
 import Foundation
 
 struct Reel: Identifiable {
-    let id = UUID()
+    let id: UUID
     let content: Content
+
+    init(id: UUID = UUID(), content: Content) {
+        self.id = id
+        self.content = content
+    }
 
     enum Content {
         case chapterTitle(index: Int, title: String)

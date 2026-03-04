@@ -1,10 +1,3 @@
-//
-//  HomeView.swift
-//  Reeld
-//
-//  Created by Amit Shinde on 2026-03-04.
-//
-
 import SwiftUI
 
 struct HomeView: View {
@@ -12,23 +5,31 @@ struct HomeView: View {
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
 
+    private struct GroupedRecentItems {
+        var today: [RecentContentSnapshot] = []
+        var yesterday: [RecentContentSnapshot] = []
+        var earlier: [RecentContentSnapshot] = []
+
+        var isEmpty: Bool {
+            today.isEmpty && yesterday.isEmpty && earlier.isEmpty
+        }
+    }
+
     private var recentItems: [RecentContentSnapshot] {
         Array(viewModel.recentItems.prefix(10))
     }
 
-    private var todayItems: [RecentContentSnapshot] {
+    private var groupedRecentItems: GroupedRecentItems {
         let calendar = Calendar.current
-        return recentItems.filter { calendar.isDateInToday($0.updatedAt) }
-    }
-
-    private var yesterdayItems: [RecentContentSnapshot] {
-        let calendar = Calendar.current
-        return recentItems.filter { calendar.isDateInYesterday($0.updatedAt) }
-    }
-
-    private var earlierItems: [RecentContentSnapshot] {
-        let calendar = Calendar.current
-        return recentItems.filter { !calendar.isDateInToday($0.updatedAt) && !calendar.isDateInYesterday($0.updatedAt) }
+        return recentItems.reduce(into: GroupedRecentItems()) { groups, item in
+            if calendar.isDateInToday(item.updatedAt) {
+                groups.today.append(item)
+            } else if calendar.isDateInYesterday(item.updatedAt) {
+                groups.yesterday.append(item)
+            } else {
+                groups.earlier.append(item)
+            }
+        }
     }
 
     var body: some View {
@@ -58,7 +59,7 @@ struct HomeView: View {
                 .foregroundStyle(.white)
             Spacer()
             Button {
-                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                HapticsFeedback.impactSoft()
                 onOpenSettings?()
             } label: {
                 Image(systemName: "gearshape.fill")
@@ -109,12 +110,14 @@ struct HomeView: View {
     }
 
     private var recentItemsSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let groups = groupedRecentItems
+
+        return VStack(alignment: .leading, spacing: 14) {
             Text("Today")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
 
-            if recentItems.isEmpty {
+            if groups.isEmpty {
                 HStack(spacing: 10) {
                     Image(systemName: "clock.arrow.circlepath")
                         .font(.subheadline)
@@ -132,9 +135,9 @@ struct HomeView: View {
                         .stroke(.white.opacity(0.08), lineWidth: 1)
                 )
             } else {
-                groupedRecentSection(title: "", items: todayItems)
-                groupedRecentSection(title: "Yesterday", items: yesterdayItems)
-                groupedRecentSection(title: "Earlier", items: earlierItems)
+                groupedRecentSection(title: "", items: groups.today)
+                groupedRecentSection(title: "Yesterday", items: groups.yesterday)
+                groupedRecentSection(title: "Earlier", items: groups.earlier)
             }
         }
     }
@@ -150,10 +153,10 @@ struct HomeView: View {
                 }
 
                 VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    ForEach(items) { item in
                         recentRow(item, isLastSeen: item.id == recentItems.first?.id)
 
-                        if index < items.count - 1 {
+                        if item.id != items.last?.id {
                             Divider().background(.white.opacity(0.08))
                         }
                     }
@@ -200,7 +203,7 @@ struct HomeView: View {
     }
 
     private func openRecent(_ snapshot: RecentContentSnapshot) {
-        UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        HapticsFeedback.impactSoft()
         viewModel.loadRecentSnapshot(snapshot)
         onOpenFeed?()
     }

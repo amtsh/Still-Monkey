@@ -1,10 +1,5 @@
 import Foundation
 
-struct ContentPrompt {
-    let systemPrompt: String
-    let userPrompt: String
-}
-
 enum ContentPromptLibrary {
     static func prompt(for mode: ContentMode, topic: String) -> ContentPrompt {
         switch mode {

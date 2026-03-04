@@ -1,10 +1,3 @@
-//
-//  ReelsView.swift
-//  Reeld
-//
-//  Created by Amit Shinde on 2026-03-04.
-//
-
 import SwiftUI
 
 struct ReelsView: View {
@@ -16,6 +9,10 @@ struct ReelsView: View {
     private var topTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
         return rawTitle.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
+    }
+
+    private var firstReelID: Reel.ID? {
+        viewModel.reels.first?.id
     }
 
     private var currentIndex: Int {
@@ -47,25 +44,18 @@ struct ReelsView: View {
         }
         .onChange(of: currentID) { oldValue, newValue in
             guard oldValue != nil, newValue != oldValue else { return }
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            HapticsFeedback.impactSoft()
         }
     }
-
-    // MARK: – Feed
 
     private var reelsFeed: some View {
         ScrollView(.vertical) {
             LazyVStack(spacing: 0) {
-                ForEach(Array(viewModel.reels.enumerated()), id: \.element.id) { offset, reel in
+                ForEach(viewModel.reels) { reel in
                     ZStack {
-                        ReelCardView(
-                            reel: reel,
-                            currentIndex: currentIndex,
-                            cardIndex: offset,
-                            totalCount: viewModel.reels.count
-                        )
+                        ReelCardView(reel: reel)
 
-                        if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
+                        if reel.id == firstReelID && !hasShownSwipeHint && viewModel.reels.count > 1 {
                             SwipeHintOverlay()
                                 .onAppear { hasShownSwipeHint = true }
                         }
@@ -80,14 +70,21 @@ struct ReelsView: View {
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
         .ignoresSafeArea()
-        .onChange(of: viewModel.reels.count) { _, _ in
-            if currentID == nil {
+        .overlay(alignment: .bottom) {
+            ReelProgressBar(totalSegments: viewModel.reels.count, currentIndex: currentIndex)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+                .allowsHitTesting(false)
+        }
+        .onChange(of: viewModel.reels.count) { _, count in
+            if count == 0 {
+                currentID = nil
+                hasShownSwipeHint = false
+            } else if currentID == nil {
                 currentID = viewModel.reels.first?.id
             }
         }
     }
-
-    // MARK: – Loading strip (shown while streaming continues)
 
     private var loadingStrip: some View {
         VStack {
@@ -101,8 +98,6 @@ struct ReelsView: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
     }
-
-    // MARK: – Empty / loading state
 
     private var emptyState: some View {
         VStack(spacing: 20) {

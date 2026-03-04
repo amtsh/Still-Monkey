@@ -1,10 +1,3 @@
-//
-//  FloatingSearchBar.swift
-//  Reeld
-//
-//  Created by Amit Shinde on 2026-03-04.
-//
-
 import SwiftUI
 
 struct FloatingSearchBar: View {
@@ -94,7 +87,7 @@ struct FloatingSearchBar: View {
 
     private func startLearning() {
         isSearchFocused.wrappedValue = false
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        HapticsFeedback.impactMedium()
         onStartLearning?()
     }
 }
