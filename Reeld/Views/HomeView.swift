@@ -136,10 +136,10 @@ struct HomeView: View {
     @ViewBuilder
     private func groupedRecentSection(title: String, items: [RecentContentSnapshot]) -> some View {
         if !items.isEmpty {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 12) {
                 Text(title)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white.opacity(0.8))
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -161,19 +161,19 @@ struct HomeView: View {
         } label: {
             HStack(spacing: 12) {
                 Text(item.displayTopic)
-                    .font(.subheadline.weight(.semibold))
+                .font(.body.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.92))
                     .lineLimit(1)
 
                 Spacer()
 
                 if isLastSeen {
-                    Text("Last seen")
+                    Text("Continue")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.black.opacity(0.82))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
-                        .background(.white.opacity(0.88), in: Capsule())
+                        .background(.white.opacity(0.6), in: Capsule())
                         .overlay(
                             Capsule().stroke(.white.opacity(0.35), lineWidth: 1)
                         )
