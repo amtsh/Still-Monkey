@@ -8,14 +8,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    private enum Mode: String, CaseIterable {
-        case learn = "Learn"
-        case story = "Story"
-    }
-
     @Bindable var viewModel: TopicViewModel
     @FocusState private var isTextFieldFocused: Bool
-    @State private var selectedMode: Mode = .learn
 
     private var canStart: Bool {
         !viewModel.isLoading && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -79,20 +73,20 @@ struct HomeView: View {
     private var bottomComposer: some View {
         VStack(alignment: .leading, spacing: 12) {
             Menu {
-                ForEach(Mode.allCases, id: \.self) { mode in
+                ForEach(ContentMode.allCases, id: \.self) { mode in
                     Button {
-                        selectedMode = mode
+                        viewModel.contentMode = mode
                     } label: {
-                        if selectedMode == mode {
-                            Label(mode.rawValue, systemImage: "checkmark")
+                        if viewModel.contentMode == mode {
+                            Label(mode.tabLabel, systemImage: "checkmark")
                         } else {
-                            Text(mode.rawValue)
+                            Text(mode.tabLabel)
                         }
                     }
                 }
             } label: {
                 HStack(spacing: 8) {
-                    Text(selectedMode.rawValue)
+                    Text(viewModel.contentMode.tabLabel)
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
@@ -106,7 +100,7 @@ struct HomeView: View {
             .buttonStyle(.plain)
 
             HStack(spacing: 8) {
-                TextField("Learn something new today.", text: $viewModel.topic)
+                TextField(viewModel.contentMode.composerPlaceholder, text: $viewModel.topic)
                     .font(.system(size: 16, weight: .regular, design: .rounded))
                     .foregroundStyle(.white.opacity(0.92))
                     .focused($isTextFieldFocused)

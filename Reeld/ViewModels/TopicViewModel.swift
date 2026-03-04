@@ -11,6 +11,7 @@ import Observation
 @Observable
 final class TopicViewModel {
     var topic: String = ""
+    var contentMode: ContentMode = .learn
     var reels: [Reel] = []
     var isLoading: Bool = false
     var error: String?
@@ -22,22 +23,6 @@ final class TopicViewModel {
 
     private static let recentTopicsKey = "recentTopics"
     private static let maxRecentTopics = 5
-    static let systemPrompt = """
-    You are an educational assistant. Break the topic into many chapters.
-    Output only plain text using this exact structure, with no preamble and no markdown headings:
-
-    CHAPTER: Chapter Title Here
-    - Bullet 1 (35-50 words, 2-3 sentences, clear explanation)
-    - Bullet 2 (35-50 words, 2-3 sentences, clear explanation)
-    - ... continue until Bullet 10
-
-    Rules:
-    - Every chapter must have exactly 10 bullet points.
-    - Every bullet must be on its own line and start with "- ".
-    - Each bullet should be explanatory, not a short phrase.
-    - Do not include any text outside this format.
-    """
-
     init() {
         recentTopics = UserDefaults.standard.stringArray(forKey: Self.recentTopicsKey) ?? []
     }
@@ -61,7 +46,12 @@ final class TopicViewModel {
         parser.reset()
 
         do {
-            let stream = service.stream(prompt: trimmedTopic, systemPrompt: Self.systemPrompt, apiKey: apiKey)
+            let prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic)
+            let stream = service.stream(
+                prompt: prompt.userPrompt,
+                systemPrompt: prompt.systemPrompt,
+                apiKey: apiKey
+            )
             for try await token in stream {
                 streamBuffer += token
                 processBuffer()

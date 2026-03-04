@@ -105,7 +105,7 @@ struct ReelsView: View {
                 ProgressView()
                     .tint(.white)
                     .scaleEffect(1.4)
-                Text("Cooking content ...")
+                Text(viewModel.contentMode.loadingMessage)
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.55))
             } else if let error = viewModel.error {
@@ -127,10 +127,10 @@ struct ReelsView: View {
                 .foregroundStyle(.black)
                 .disabled(viewModel.isLoading)
             } else {
-                Image(systemName: "play.rectangle.fill")
+                Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
                     .font(.system(size: 56))
                     .foregroundStyle(.white.opacity(0.15))
-                Text("Enter a topic to start learning")
+                Text(viewModel.contentMode.emptyStateMessage)
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.35))
             }
@@ -152,7 +152,7 @@ struct ReelsView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text(viewModel.topic.isEmpty ? "Reels" : viewModel.topic)
+                Text(viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .lineLimit(1)
