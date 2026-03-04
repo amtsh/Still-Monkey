@@ -141,7 +141,7 @@ struct HomeView: View {
 
     private var recentItemsSection: some View {
         let sections: [(id: String, title: String, items: [RecentContentSnapshot])] = [
-            ("today", "History", todayItems),
+            ("today", "Recent searches", todayItems),
             ("yesterday", "Yesterday", yesterdayItems),
             ("earlier", "Earlier", earlierItems),
         ]
@@ -171,7 +171,7 @@ struct HomeView: View {
                             }
                         }
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.78))
+                        .foregroundStyle(.white.opacity(0.68))
                         .buttonStyle(.plain)
                     }
                 }
@@ -194,12 +194,15 @@ struct HomeView: View {
     }
 
     private func recentRow(_ item: RecentContentSnapshot, isLastSeen: Bool) -> some View {
-        Group {
+        let iconName = item.mode == .story ? "moon.zzz" : "lightbulb.min"
+        let iconColor = Color(red: 0.72, green: 0.78, blue: 0.96)
+
+        return Group {
             if isEditingHistory {
                 HStack(spacing: 14) {
-                    Image(systemName: "book")
+                    Image(systemName: iconName)
                         .font(.system(size: 20, weight: .regular))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(iconColor.opacity(0.88))
                         .frame(width: 24)
 
                     Text(item.displayTopic)
@@ -226,9 +229,9 @@ struct HomeView: View {
                     openRecent(item)
                 } label: {
                     HStack(spacing: 14) {
-                        Image(systemName: "book")
+                        Image(systemName: iconName)
                             .font(.system(size: 20, weight: .regular))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(iconColor.opacity(0.88))
                             .frame(width: 24)
 
                         Text(item.displayTopic)

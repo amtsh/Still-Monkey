@@ -15,16 +15,16 @@ struct FloatingSearchBar: View {
                         } label: {
                             Text(mode.tabLabel)
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.9))
+                                .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.9))
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(
                                     Capsule()
-                                        .fill(isSelected ? Color.white.opacity(0.92) : Color.clear)
+                                        .fill(isSelected ? Color.orange.opacity(0.22) : Color.clear)
                                 )
                                 .overlay(
                                     Capsule()
-                                        .stroke(.white.opacity(isSelected ? 0.16 : 0.28), lineWidth: 1)
+                                        .stroke(isSelected ? Color.orange.opacity(0.55) : .white.opacity(0.28), lineWidth: 1)
                                 )
                                 .glassBackground(in: Capsule(), interactive: true)
                         }
