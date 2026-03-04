@@ -117,7 +117,7 @@ struct HomeView: View {
             ("earlier", "Earlier", earlierItems),
         ]
 
-        VStack(alignment: .leading, spacing: 14) {
+      return VStack(alignment: .leading, spacing: 14) {
             ForEach(sections, id: \.id) { section in
                 groupedRecentSection(title: section.title, items: section.items)
             }

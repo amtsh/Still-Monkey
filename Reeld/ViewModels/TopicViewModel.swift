@@ -35,7 +35,7 @@ final class TopicViewModel {
 
         let apiKey = UserDefaults.standard.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
         guard !apiKey.isEmpty else {
-            error = "Add your OpenRouter API key in Settings before generating."
+            error = "Add OpenRouter API key in Settings."
             return
         }
 
@@ -136,4 +136,3 @@ final class TopicViewModel {
         reels.append(reel)
     }
 }
-
