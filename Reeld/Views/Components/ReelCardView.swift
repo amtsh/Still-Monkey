@@ -45,7 +45,7 @@ struct ReelCardView: View {
     }
 
     private func reelBarVisibility(for proxy: GeometryProxy) -> Double {
-        let minY = proxy.frame(in: .global).minY
+        let minY = proxy.frame(in: .scrollView).minY
         let pageHeight = max(proxy.size.height, 1)
         let restingMinY = CGFloat(cardIndex - currentIndex) * pageHeight
         let distanceFromRest = abs(minY - restingMinY)
@@ -141,7 +141,7 @@ private struct ContentCard: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Spacer()
+                Spacer(minLength: 86)
 
                 Text(text)
                     .font(.system(size: 25, weight: .regular))
@@ -150,12 +150,15 @@ private struct ContentCard: View {
                     .padding(.horizontal, 28)
                     .multilineTextAlignment(.leading)
                     .minimumScaleFactor(0.75)
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(16)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 18)
 
-                Spacer()
+                Spacer(minLength: 170)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottomLeading) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(chapterIndex). \(chapterTitle ?? "Chapter \(chapterIndex)")")

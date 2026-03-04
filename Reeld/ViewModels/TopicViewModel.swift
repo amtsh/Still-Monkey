@@ -17,6 +17,7 @@ final class TopicViewModel {
     var isLoading: Bool = false
     var error: String?
     var recentItems: [RecentContentSnapshot] = []
+    var lastAccessedRecentID: String?
 
     var chapterTitlesByIndex: [Int: String] {
         Dictionary(
@@ -32,10 +33,12 @@ final class TopicViewModel {
     private var parser = ReelContentParser()
 
     private static let recentSnapshotsKey = "recentContentSnapshots"
+    private static let lastAccessedRecentKey = "lastAccessedRecentSnapshotID"
     private static let maxRecentItems = 10
 
     init() {
         recentItems = loadRecentSnapshots()
+        lastAccessedRecentID = UserDefaults.standard.string(forKey: Self.lastAccessedRecentKey)
     }
 
     func generateContent() async {
@@ -99,7 +102,8 @@ final class TopicViewModel {
         isLoading = false
         streamBuffer = ""
         parser.reset()
-        saveRecentSnapshot(topic: snapshot.topic, mode: snapshot.mode, reels: reels)
+        lastAccessedRecentID = snapshot.id
+        UserDefaults.standard.set(snapshot.id, forKey: Self.lastAccessedRecentKey)
     }
 
     private func loadRecentSnapshots() -> [RecentContentSnapshot] {
@@ -109,7 +113,7 @@ final class TopicViewModel {
 
         do {
             let snapshots = try JSONDecoder().decode([RecentContentSnapshot].self, from: data)
-            return Array(snapshots.prefix(Self.maxRecentItems))
+            return Array(snapshots.sorted(by: { $0.updatedAt > $1.updatedAt }).prefix(Self.maxRecentItems))
         } catch {
             return []
         }
@@ -130,7 +134,7 @@ final class TopicViewModel {
             !($0.topic.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == normalizedTopic.lowercased() && $0.mode == mode)
         }
         updated.insert(snapshot, at: 0)
-        recentItems = Array(updated.prefix(Self.maxRecentItems))
+        recentItems = Array(updated.sorted(by: { $0.updatedAt > $1.updatedAt }).prefix(Self.maxRecentItems))
 
         do {
             let data = try JSONEncoder().encode(recentItems)

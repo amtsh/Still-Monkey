@@ -104,7 +104,7 @@ struct HomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.vertical, 22)
-        .glassCard(cornerRadius: 20)
+        .glassCard(cornerRadius: 24)
     }
 
     private var recentItemsSection: some View {
@@ -131,7 +131,7 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        recentRow(item, isLastSeen: item.id == recentItems.first?.id)
+                        recentRow(item, isLastSeen: item.id == viewModel.lastAccessedRecentID)
 
                         if index < items.count - 1 {
                             Divider().background(.white.opacity(0.08))
@@ -158,10 +158,13 @@ struct HomeView: View {
                 if isLastSeen {
                     Text("Last seen")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(.black.opacity(0.82))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
-                        .glassBackground(in: Capsule())
+                        .background(.white.opacity(0.88), in: Capsule())
+                        .overlay(
+                            Capsule().stroke(.white.opacity(0.35), lineWidth: 1)
+                        )
                 }
 
                 Image(systemName: "chevron.right")

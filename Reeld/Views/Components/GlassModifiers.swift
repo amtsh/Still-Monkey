@@ -19,15 +19,13 @@ struct SubmitButtonBackgroundModifier: ViewModifier {
     let enabled: Bool
 
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-                .glassEffect(enabled ? .regular.interactive() : .regular, in: Circle())
-        } else {
-            content
-                .background(
-                    Circle().fill(enabled ? Color.white.opacity(0.78) : Color.white.opacity(0.3))
-                )
-        }
+        content
+            .background(
+                Circle().fill(enabled ? Color.white.opacity(0.92) : Color.white.opacity(0.4))
+            )
+            .overlay(
+                Circle().stroke(.white.opacity(enabled ? 0.35 : 0.2), lineWidth: 1)
+            )
     }
 }
 

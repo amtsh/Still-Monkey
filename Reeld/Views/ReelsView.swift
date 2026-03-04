@@ -82,7 +82,6 @@ struct ReelsView: View {
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
-        .ignoresSafeArea()
         .onChange(of: viewModel.reels.count) { _, _ in
             if currentID == nil {
                 currentID = viewModel.reels.first?.id
@@ -216,23 +215,32 @@ struct ReelsView: View {
     }
 }
 
-private struct InteractivePopGestureEnabler: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> PopGestureViewController {
-        PopGestureViewController()
+private struct InteractivePopGestureEnabler: UIViewRepresentable {
+    func makeUIView(context: Context) -> PopGestureHostView {
+        PopGestureHostView()
     }
 
-    func updateUIViewController(_ uiViewController: PopGestureViewController, context: Context) {}
+    func updateUIView(_ uiView: PopGestureHostView, context: Context) {
+        DispatchQueue.main.async {
+            uiView.enableInteractivePopIfPossible()
+        }
+    }
 }
 
-private final class PopGestureViewController: UIViewController, UIGestureRecognizerDelegate {
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        guard let navigationController else { return }
-        navigationController.interactivePopGestureRecognizer?.isEnabled = true
-        navigationController.interactivePopGestureRecognizer?.delegate = self
+private final class PopGestureHostView: UIView {
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        enableInteractivePopIfPossible()
     }
 
-    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        (navigationController?.viewControllers.count ?? 0) > 1
+    func enableInteractivePopIfPossible() {
+        guard let navigationController = nearestViewController?.navigationController else { return }
+        let popGesture = navigationController.interactivePopGestureRecognizer
+        popGesture?.isEnabled = navigationController.viewControllers.count > 1
+        popGesture?.delegate = nil
+    }
+
+    private var nearestViewController: UIViewController? {
+        sequence(first: next, next: { $0?.next }).first { $0 is UIViewController } as? UIViewController
     }
 }
