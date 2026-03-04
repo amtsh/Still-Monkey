@@ -121,7 +121,7 @@ struct HomeView: View {
 
     private var recentItemsSection: some View {
         let sections: [(id: String, title: String, items: [RecentContentSnapshot])] = [
-            ("today", "Today", todayItems),
+            ("today", "History", todayItems),
             ("yesterday", "Yesterday", yesterdayItems),
             ("earlier", "Earlier", earlierItems),
         ]
@@ -160,9 +160,14 @@ struct HomeView: View {
             openRecent(item)
         } label: {
             HStack(spacing: 12) {
+                Image(systemName: symbolName(for: item.displayTopic))
+                    .font(.system(size: UIIconSize.inline, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: 18)
+
                 Text(item.displayTopic)
                     .font(.body.weight(.medium))
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(.white)
                     .lineLimit(1)
 
                 Spacer()
@@ -196,5 +201,45 @@ struct HomeView: View {
         isSearchFocused.wrappedValue = false
         HapticsFeedback.impactMedium()
         onStartLearning?()
+    }
+
+    private func symbolName(for title: String) -> String {
+        let key = title.lowercased()
+
+        if key.contains("ai") || key.contains("ml") || key.contains("model") || key.contains("neural") {
+            return "cpu"
+        }
+        if key.contains("code") || key.contains("program") || key.contains("swift") || key.contains("dev") {
+            return "chevron.left.forwardslash.chevron.right"
+        }
+        if key.contains("design") || key.contains("ui") || key.contains("ux") {
+            return "paintpalette"
+        }
+        if key.contains("finance") || key.contains("money") || key.contains("invest") || key.contains("stock") {
+            return "dollarsign.circle"
+        }
+        if key.contains("health") || key.contains("fitness") || key.contains("wellness") {
+            return "heart.text.square"
+        }
+        if key.contains("history") || key.contains("culture") || key.contains("society") {
+            return "book.closed"
+        }
+        if key.contains("science") || key.contains("physics") || key.contains("chem") || key.contains("bio") {
+            return "atom"
+        }
+        if key.contains("space") || key.contains("astronomy") {
+            return "moon.stars"
+        }
+        if key.contains("business") || key.contains("strategy") || key.contains("startup") {
+            return "briefcase"
+        }
+        if key.contains("music") || key.contains("song") {
+            return "music.note"
+        }
+        if key.contains("art") || key.contains("photo") {
+            return "photo"
+        }
+
+        return "sparkles"
     }
 }
