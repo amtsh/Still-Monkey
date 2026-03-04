@@ -138,8 +138,8 @@ struct HomeView: View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Text(title)
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.white.opacity(0.8))
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(.white.opacity(0.8))
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -161,22 +161,16 @@ struct HomeView: View {
         } label: {
             HStack(spacing: 12) {
                 Text(item.displayTopic)
-                .font(.body.weight(.semibold))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(.white.opacity(0.92))
                     .lineLimit(1)
 
                 Spacer()
 
                 if isLastSeen {
-                    Text("Continue")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.black.opacity(0.82))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(.white.opacity(0.6), in: Capsule())
-                        .overlay(
-                            Capsule().stroke(.white.opacity(0.35), lineWidth: 1)
-                        )
+                    Text("Last seen")
+                        .font(.caption2.weight(.regular))
+                        .foregroundStyle(.white.opacity(0.72))
                 }
 
                 Image(systemName: "chevron.right")

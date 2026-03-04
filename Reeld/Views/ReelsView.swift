@@ -42,7 +42,11 @@ struct ReelsView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            applyInitialPositionIfNeeded()
+        }
         .onChange(of: currentID) { oldValue, newValue in
+            viewModel.recordCurrentReelID(newValue)
             guard oldValue != nil, newValue != oldValue else { return }
             HapticsFeedback.impactSoft()
         }
@@ -78,10 +82,23 @@ struct ReelsView: View {
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
-        .onChange(of: viewModel.reels.count) { _, _ in
-            if currentID == nil {
-                currentID = viewModel.reels.first?.id
-            }
+        .onChange(of: viewModel.reels.map(\.id)) { _, _ in
+            applyInitialPositionIfNeeded()
+        }
+    }
+
+    private func applyInitialPositionIfNeeded() {
+        guard !viewModel.reels.isEmpty else { return }
+
+        if let currentID, viewModel.reels.contains(where: { $0.id == currentID }) {
+            return
+        }
+
+        let savedID = viewModel.consumePendingStartReelID()
+        if let savedID, viewModel.reels.contains(where: { $0.id == savedID }) {
+            currentID = savedID
+        } else {
+            currentID = viewModel.reels.first?.id
         }
     }
 

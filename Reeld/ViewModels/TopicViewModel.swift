@@ -18,6 +18,7 @@ final class TopicViewModel {
     var error: String?
     var recentItems: [RecentContentSnapshot] = []
     var lastAccessedRecentID: String?
+    var pendingStartReelID: Reel.ID?
 
     var chapterTitlesByIndex: [Int: String] {
         Dictionary(
@@ -34,11 +35,17 @@ final class TopicViewModel {
 
     private static let recentSnapshotsKey = "recentContentSnapshots"
     private static let lastAccessedRecentKey = "lastAccessedRecentSnapshotID"
+    private static let recentSnapshotLastViewedReelIDsKey = "recentSnapshotLastViewedReelIDs"
     private static let maxRecentItems = 10
+    private var activeRecentSnapshotID: String?
+    private var lastViewedReelIDsBySnapshotID: [String: String] = [:]
 
     init() {
         recentItems = loadRecentSnapshots()
         lastAccessedRecentID = UserDefaults.standard.string(forKey: Self.lastAccessedRecentKey)
+        if let stored = UserDefaults.standard.dictionary(forKey: Self.recentSnapshotLastViewedReelIDsKey) as? [String: String] {
+            lastViewedReelIDsBySnapshotID = stored
+        }
     }
 
     func generateContent() async {
@@ -104,6 +111,29 @@ final class TopicViewModel {
         parser.reset()
         lastAccessedRecentID = snapshot.id
         UserDefaults.standard.set(snapshot.id, forKey: Self.lastAccessedRecentKey)
+        activeRecentSnapshotID = snapshot.id
+        pendingStartReelID = {
+            guard
+                let rawID = lastViewedReelIDsBySnapshotID[snapshot.id],
+                let reelID = UUID(uuidString: rawID),
+                reels.contains(where: { $0.id == reelID })
+            else { return nil }
+            return reelID
+        }()
+    }
+
+    func recordCurrentReelID(_ reelID: Reel.ID?) {
+        guard
+            let snapshotID = activeRecentSnapshotID,
+            let reelID
+        else { return }
+        lastViewedReelIDsBySnapshotID[snapshotID] = reelID.uuidString
+        UserDefaults.standard.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+    }
+
+    func consumePendingStartReelID() -> Reel.ID? {
+        defer { pendingStartReelID = nil }
+        return pendingStartReelID
     }
 
     private func loadRecentSnapshots() -> [RecentContentSnapshot] {
