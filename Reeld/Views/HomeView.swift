@@ -10,6 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
     @State private var searchText = ""
+    @State private var isEditingHistory = false
     var isSearchFocused: FocusState<Bool>.Binding
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
@@ -147,19 +148,34 @@ struct HomeView: View {
 
         return VStack(alignment: .leading, spacing: 16) {
             ForEach(sections, id: \.id) { section in
-                groupedRecentSection(title: section.title, items: section.items)
+                groupedRecentSection(id: section.id, title: section.title, items: section.items)
             }
         }
     }
 
     @ViewBuilder
-    private func groupedRecentSection(title: String, items: [RecentContentSnapshot]) -> some View {
+    private func groupedRecentSection(id: String, title: String, items: [RecentContentSnapshot]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
-                Text(title)
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .padding(.horizontal, 16)
+                HStack(spacing: 12) {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white.opacity(0.8))
+
+                    Spacer()
+
+                    if id == "today" {
+                        Button(isEditingHistory ? "Done" : "Edit") {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                isEditingHistory.toggle()
+                            }
+                        }
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.78))
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -178,44 +194,85 @@ struct HomeView: View {
     }
 
     private func recentRow(_ item: RecentContentSnapshot, isLastSeen: Bool) -> some View {
-        Button {
-            openRecent(item)
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "book")
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .frame(width: 24)
+        Group {
+            if isEditingHistory {
+                HStack(spacing: 14) {
+                    Image(systemName: "book")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.7))
+                        .frame(width: 24)
 
-                Text(item.displayTopic)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.95))
-                    .lineLimit(1)
+                    Text(item.displayTopic)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(.white.opacity(0.95))
+                        .lineLimit(1)
 
-                Spacer()
+                    Spacer()
 
-                if isLastSeen {
-                    Text("Last seen")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.58))
+                    Button(role: .destructive) {
+                        deleteRecent(item)
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .frame(minHeight: 52)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Button {
+                    openRecent(item)
+                } label: {
+                    HStack(spacing: 14) {
+                        Image(systemName: "book")
+                            .font(.system(size: 20, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .frame(width: 24)
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.28))
+                        Text(item.displayTopic)
+                            .font(.system(size: 12, weight: .regular))
+                            .foregroundStyle(.white.opacity(0.95))
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        if isLastSeen {
+                            Text("Last seen")
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.white.opacity(0.58))
+                        }
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.28))
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .frame(minHeight: 52)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        deleteRecent(item)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(minHeight: 52)
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .buttonStyle(.plain)
     }
 
     private func openRecent(_ snapshot: RecentContentSnapshot) {
         HapticsFeedback.impactSoft()
         viewModel.loadRecentSnapshot(snapshot)
         onOpenFeed?()
+    }
+
+    private func deleteRecent(_ snapshot: RecentContentSnapshot) {
+        viewModel.deleteRecentSnapshot(snapshot)
     }
 
     private func startLearning() {

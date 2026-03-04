@@ -136,6 +136,30 @@ final class TopicViewModel {
         return pendingStartReelID
     }
 
+    func deleteRecentSnapshot(_ snapshot: RecentContentSnapshot) {
+        recentItems.removeAll { $0.id == snapshot.id }
+
+        if lastAccessedRecentID == snapshot.id {
+            lastAccessedRecentID = nil
+            UserDefaults.standard.removeObject(forKey: Self.lastAccessedRecentKey)
+        }
+
+        if activeRecentSnapshotID == snapshot.id {
+            activeRecentSnapshotID = nil
+            pendingStartReelID = nil
+        }
+
+        lastViewedReelIDsBySnapshotID.removeValue(forKey: snapshot.id)
+        UserDefaults.standard.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+
+        do {
+            let data = try JSONEncoder().encode(recentItems)
+            UserDefaults.standard.set(data, forKey: Self.recentSnapshotsKey)
+        } catch {
+            return
+        }
+    }
+
     private func loadRecentSnapshots() -> [RecentContentSnapshot] {
         guard let data = UserDefaults.standard.data(forKey: Self.recentSnapshotsKey) else {
             return []

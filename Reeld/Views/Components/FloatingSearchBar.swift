@@ -4,33 +4,36 @@ struct FloatingSearchBar: View {
     @Bindable var viewModel: TopicViewModel
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 12) {
-            Menu {
-                ForEach(ContentMode.allCases, id: \.self) { mode in
-                    Button {
-                        viewModel.contentMode = mode
-                    } label: {
-                        if viewModel.contentMode == mode {
-                            Label(mode.tabLabel, systemImage: "checkmark")
-                        } else {
+        VStack(alignment: .leading, spacing: 12) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ContentMode.allCases, id: \.self) { mode in
+                        let isSelected = viewModel.contentMode == mode
+
+                        Button {
+                            viewModel.contentMode = mode
+                        } label: {
                             Text(mode.tabLabel)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(isSelected ? Color.black : Color.white.opacity(0.9))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(isSelected ? Color.white.opacity(0.92) : Color.clear)
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .stroke(.white.opacity(isSelected ? 0.16 : 0.28), lineWidth: 1)
+                                )
+                                .glassBackground(in: Capsule(), interactive: true)
                         }
+                        .buttonStyle(.plain)
                     }
                 }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(viewModel.contentMode.tabLabel)
-                        .font(.system(size: 15, weight: .semibold))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: UIIconSize.small, weight: .semibold))
-                }
-                .foregroundStyle(.white.opacity(0.9))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .glassBackground(in: Capsule())
+                .padding(.horizontal, 2)
             }
-            .buttonStyle(.plain)
-            .frame(maxWidth: .infinity, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if let error = viewModel.error {
                 Text(error)
@@ -39,9 +42,14 @@ struct FloatingSearchBar: View {
                     .padding(.leading, 6)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 20)
         .padding(.top, 6)
-        .padding(.bottom, 8)
+        .padding(.bottom, 6)
+        .onAppear {
+            if !ContentMode.allCases.contains(viewModel.contentMode) {
+                viewModel.contentMode = .learn
+            }
+        }
     }
 }
