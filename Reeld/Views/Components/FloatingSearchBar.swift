@@ -26,7 +26,7 @@ struct FloatingSearchBar: View {
             } label: {
                 HStack(spacing: 8) {
                     Text(viewModel.contentMode.tabLabel)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .font(.system(size: 15, weight: .semibold))
                     Image(systemName: "chevron.down")
                         .font(.system(size: 11, weight: .semibold))
                 }
@@ -40,7 +40,7 @@ struct FloatingSearchBar: View {
 
             HStack(spacing: 8) {
                 TextField(viewModel.contentMode.composerPlaceholder, text: $viewModel.topic)
-                    .font(.system(size: 16, weight: .regular, design: .rounded))
+                    .font(.system(size: 16, weight: .regular))
                     .foregroundStyle(.white.opacity(0.92))
                     .focused(isSearchFocused)
                     .submitLabel(.go)

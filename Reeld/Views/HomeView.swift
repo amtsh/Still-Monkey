@@ -80,7 +80,7 @@ struct HomeView: View {
     private var heroCard: some View {
         VStack(alignment: .leading, spacing: 24) {
             Text("Heal from doomscrolling")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
                 .multilineTextAlignment(.leading)
                 .lineSpacing(2)
                 .minimumScaleFactor(0.85)

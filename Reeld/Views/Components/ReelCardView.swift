@@ -30,9 +30,9 @@ struct ReelCardView: View {
     @ViewBuilder
     private var cardContent: some View {
         switch reel.content {
-        case .chapterTitle(let index, let title):
+        case let .chapterTitle(index, title):
             ChapterTitleCard(index: index, title: title)
-        case .content(let chapterIndex, let text):
+        case let .content(chapterIndex, text):
             ContentCard(chapterIndex: chapterIndex, text: text)
         }
     }
@@ -57,7 +57,9 @@ private struct ChapterTitleCard: View {
     let title: String
     @State private var appeared = false
 
-    private var accent: Color { chapterAccent(for: index) }
+    private var accent: Color {
+        chapterAccent(for: index)
+    }
 
     var body: some View {
         ZStack {
@@ -83,7 +85,7 @@ private struct ChapterTitleCard: View {
                     .overlay(Capsule().stroke(accent.opacity(0.3), lineWidth: 1))
 
                 Text(title)
-                    .font(.system(size: 42, weight: .bold, design: .rounded))
+                    .font(.system(size: 42, weight: .bold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -106,7 +108,9 @@ private struct ContentCard: View {
     let text: String
     @State private var appeared = false
 
-    private var accent: Color { chapterAccent(for: chapterIndex) }
+    private var accent: Color {
+        chapterAccent(for: chapterIndex)
+    }
 
     var body: some View {
         ZStack {
@@ -124,7 +128,7 @@ private struct ContentCard: View {
                 Spacer()
 
                 Text(text)
-                    .font(.system(size: 25, weight: .semibold, design: .rounded))
+                    .font(.system(size: 25, weight: .regular))
                     .foregroundStyle(.white)
                     .lineSpacing(5)
                     .padding(.horizontal, 28)

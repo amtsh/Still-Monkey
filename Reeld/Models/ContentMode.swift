@@ -20,7 +20,7 @@ enum ContentMode: String, CaseIterable, Codable {
     var loadingMessage: String {
         switch self {
         case .learn:
-            return "Cooking content ..."
+            return "Cooking ..."
         case .story:
             return "Writing your story ..."
         }
