@@ -11,6 +11,8 @@ struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
     @State private var searchText = ""
     @State private var isEditingHistory = false
+    @State private var pendingDeleteSnapshot: RecentContentSnapshot?
+    @State private var isShowingDeleteConfirmation = false
     var isSearchFocused: FocusState<Bool>.Binding
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
@@ -93,6 +95,16 @@ struct HomeView: View {
                 .accessibilityLabel("Settings")
             }
         }
+        .alert("Delete this item?", isPresented: $isShowingDeleteConfirmation) {
+            Button("Delete", role: .destructive) {
+                confirmDeleteRecent()
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeleteSnapshot = nil
+            }
+        } message: {
+            Text("This action cannot be undone.")
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -159,7 +171,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
                     Text(title)
-                        .font(.title2.weight(.bold))
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(.white.opacity(0.8))
 
                     Spacer()
@@ -213,7 +225,7 @@ struct HomeView: View {
                     Spacer()
 
                     Button(role: .destructive) {
-                        deleteRecent(item)
+                        requestDeleteRecent(item)
                     } label: {
                         Image(systemName: "trash")
                             .font(.system(size: 15, weight: .semibold))
@@ -259,7 +271,7 @@ struct HomeView: View {
                 .buttonStyle(.plain)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
-                        deleteRecent(item)
+                        requestDeleteRecent(item)
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -274,8 +286,15 @@ struct HomeView: View {
         onOpenFeed?()
     }
 
-    private func deleteRecent(_ snapshot: RecentContentSnapshot) {
+    private func requestDeleteRecent(_ snapshot: RecentContentSnapshot) {
+        pendingDeleteSnapshot = snapshot
+        isShowingDeleteConfirmation = true
+    }
+
+    private func confirmDeleteRecent() {
+        guard let snapshot = pendingDeleteSnapshot else { return }
         viewModel.deleteRecentSnapshot(snapshot)
+        pendingDeleteSnapshot = nil
     }
 
     private func startLearning() {
