@@ -58,17 +58,9 @@ struct HomeView: View {
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
         .searchFocused(isSearchFocused)
-        .onAppear {
-            searchText = viewModel.topic
-        }
         .onChange(of: searchText) { _, newValue in
             if viewModel.topic != newValue {
                 viewModel.topic = newValue
-            }
-        }
-        .onChange(of: viewModel.topic) { _, newValue in
-            if searchText != newValue {
-                searchText = newValue
             }
         }
         .onSubmit(of: .search) {
@@ -126,7 +118,7 @@ struct HomeView: View {
             ("earlier", "Earlier", earlierItems),
         ]
 
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 16) {
             ForEach(sections, id: \.id) { section in
                 groupedRecentSection(title: section.title, items: section.items)
             }
@@ -140,13 +132,16 @@ struct HomeView: View {
                 Text(title)
                     .font(.title2.weight(.bold))
                     .foregroundStyle(.white.opacity(0.8))
+                    .padding(.horizontal, 16)
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                         recentRow(item, isLastSeen: item.id == viewModel.lastAccessedRecentID)
 
                         if index < items.count - 1 {
-                            Divider().background(.white.opacity(0.08))
+                            Divider()
+                                .background(.white.opacity(0.12))
+                                .padding(.leading, 50)
                         }
                     }
                 }
@@ -159,32 +154,33 @@ struct HomeView: View {
         Button {
             openRecent(item)
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Image(systemName: symbolName(for: item.displayTopic))
-                    .font(.system(size: UIIconSize.inline, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .frame(width: 18)
+                    .font(.system(size: 20, weight: .medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(symbolColor(for: item.displayTopic))
+                    .frame(width: 24)
 
                 Text(item.displayTopic)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.white)
+                    .font(.body)
+                    .foregroundStyle(.white.opacity(0.95))
                     .lineLimit(1)
 
                 Spacer()
 
                 if isLastSeen {
                     Text("Last seen")
-                        .font(.caption2.weight(.regular))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.58))
                 }
 
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.35))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.28))
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .frame(minHeight: 44)
+            .padding(.vertical, 14)
+            .frame(minHeight: 52)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
@@ -241,5 +237,45 @@ struct HomeView: View {
         }
 
         return "sparkles"
+    }
+
+    private func symbolColor(for title: String) -> Color {
+        let key = title.lowercased()
+
+        if key.contains("ai") || key.contains("ml") || key.contains("model") || key.contains("neural") {
+            return .cyan
+        }
+        if key.contains("code") || key.contains("program") || key.contains("swift") || key.contains("dev") {
+            return .blue
+        }
+        if key.contains("design") || key.contains("ui") || key.contains("ux") {
+            return .mint
+        }
+        if key.contains("finance") || key.contains("money") || key.contains("invest") || key.contains("stock") {
+            return .green
+        }
+        if key.contains("health") || key.contains("fitness") || key.contains("wellness") {
+            return .pink
+        }
+        if key.contains("history") || key.contains("culture") || key.contains("society") {
+            return .orange
+        }
+        if key.contains("science") || key.contains("physics") || key.contains("chem") || key.contains("bio") {
+            return .purple
+        }
+        if key.contains("space") || key.contains("astronomy") {
+            return .indigo
+        }
+        if key.contains("business") || key.contains("strategy") || key.contains("startup") {
+            return .teal
+        }
+        if key.contains("music") || key.contains("song") {
+            return .yellow
+        }
+        if key.contains("art") || key.contains("photo") {
+            return .red
+        }
+
+        return .cyan
     }
 }
