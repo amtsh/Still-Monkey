@@ -20,19 +20,35 @@ struct HomeView: View {
         Array(viewModel.recentItems.prefix(10))
     }
 
+    private var todayItems: [RecentContentSnapshot] {
+        let calendar = Calendar.current
+        return recentItems.filter { calendar.isDateInToday($0.updatedAt) }
+    }
+
+    private var yesterdayItems: [RecentContentSnapshot] {
+        let calendar = Calendar.current
+        return recentItems.filter { calendar.isDateInYesterday($0.updatedAt) }
+    }
+
+    private var earlierItems: [RecentContentSnapshot] {
+        let calendar = Calendar.current
+        return recentItems.filter { !calendar.isDateInToday($0.updatedAt) && !calendar.isDateInYesterday($0.updatedAt) }
+    }
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 18) {
-                Spacer(minLength: 16)
-                heroSection
-                recentItemsSection
-                Spacer(minLength: 8)
-                bottomComposer
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    heroCard
+                    recentItemsSection
+                    bottomComposer
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
         }
         .safeAreaInset(edge: .top) {
             topHeader
@@ -53,93 +69,131 @@ struct HomeView: View {
         .background(.black.opacity(0.94))
     }
 
-    private var heroSection: some View {
-        VStack(spacing: 10) {
-            Text("Heal from\ndoomscrolling")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
-                .multilineTextAlignment(.center)
-                .lineSpacing(2)
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 1.00, green: 0.63, blue: 0.71),
-                            Color(red: 0.83, green: 0.56, blue: 1.00)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+    private var heroCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Start Here")
+                .font(.title.weight(.bold))
+                .foregroundStyle(.white)
 
-            Text("... with microlearning")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.78))
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Heal from\ndoomscrolling")
+                    .font(.system(size: 38, weight: .bold, design: .rounded))
+                    .multilineTextAlignment(.leading)
+                    .lineSpacing(2)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 1.00, green: 0.63, blue: 0.71),
+                                Color(red: 0.83, green: 0.56, blue: 1.00),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+
+                Text("... with microlearning")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.78))
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .background(.white.opacity(0.06), in: .rect(cornerRadius: 20))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(.white.opacity(0.09), lineWidth: 1)
+        )
     }
 
     private var recentItemsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 14) {
             Text("Recent")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.55))
-                .textCase(.uppercase)
-                .tracking(0.8)
-                .padding(.horizontal, 2)
+                .font(.title2.weight(.bold))
+                .foregroundStyle(.white)
 
-            VStack(spacing: 0) {
-                if recentItems.isEmpty {
-                    HStack(spacing: 10) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.3))
-                        Text("No recent topics yet. Generate one to see it here.")
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.5))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 14)
-                } else {
-                    ForEach(Array(recentItems.enumerated()), id: \.element.id) { index, item in
-                        Button {
-                            openRecent(item)
-                        } label: {
-                            HStack(spacing: 10) {
-                                Text(item.displayTopic)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.white.opacity(0.92))
-                                    .lineLimit(1)
+            if recentItems.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.3))
+                    Text("No recent topics yet. Generate one to see it here.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 14)
+                .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                )
+            } else {
+                groupedRecentSection(title: "Today", items: todayItems)
+                groupedRecentSection(title: "Yesterday", items: yesterdayItems)
+                groupedRecentSection(title: "Earlier", items: earlierItems)
+            }
+        }
+    }
 
-                                Spacer()
+    @ViewBuilder
+    private func groupedRecentSection(title: String, items: [RecentContentSnapshot]) -> some View {
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.52))
+                    .textCase(.uppercase)
+                    .tracking(0.8)
+                    .padding(.horizontal, 2)
 
-                                Text(item.modeLabel)
-                                    .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(.white.opacity(0.72))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 5)
-                                    .background(.white.opacity(0.1), in: Capsule())
+                VStack(spacing: 0) {
+                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        recentRow(item)
 
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.white.opacity(0.35))
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .buttonStyle(.plain)
-
-                        if index < recentItems.count - 1 {
+                        if index < items.count - 1 {
                             Divider().background(.white.opacity(0.08))
                         }
                     }
                 }
+                .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                )
             }
-            .background(.white.opacity(0.06), in: .rect(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(.white.opacity(0.08), lineWidth: 1)
-            )
         }
+    }
+
+    private func recentRow(_ item: RecentContentSnapshot) -> some View {
+        Button {
+            openRecent(item)
+        } label: {
+            HStack(spacing: 10) {
+                Text(item.displayTopic)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.92))
+                    .lineLimit(1)
+
+                Spacer()
+
+                Text(item.modeLabel)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.72))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(.white.opacity(0.1), in: Capsule())
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.35))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .buttonStyle(.plain)
     }
 
     private var bottomComposer: some View {
