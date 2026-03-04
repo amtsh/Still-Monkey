@@ -16,11 +16,10 @@ struct ContentView: View {
             Tab("Learn", systemImage: "sparkles", value: 0) {
                 NavigationStack {
                     HomeView(viewModel: viewModel)
-                        .navigationTitle("Reeld")
-                        .navigationBarTitleDisplayMode(.large)
+                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
-            Tab("Reels", systemImage: "play.fill", value: 1) {
+            Tab("Feed", systemImage: "play.fill", value: 1) {
                 NavigationStack {
                     ReelsView(
                         viewModel: viewModel,
@@ -36,8 +35,7 @@ struct ContentView: View {
             Tab("Settings", systemImage: "gearshape.fill", value: 2) {
                 NavigationStack {
                     SettingsView()
-                        .navigationTitle("Reeld")
-                        .navigationBarTitleDisplayMode(.large)
+                        .toolbar(.hidden, for: .navigationBar)
                 }
             }
         }

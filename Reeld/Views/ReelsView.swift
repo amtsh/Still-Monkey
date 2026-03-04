@@ -105,7 +105,7 @@ struct ReelsView: View {
                 ProgressView()
                     .tint(.white)
                     .scaleEffect(1.4)
-                Text("Generating your reels…")
+                Text("Cooking content ...")
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.55))
             } else if let error = viewModel.error {
@@ -117,6 +117,15 @@ struct ReelsView: View {
                     .foregroundStyle(.white.opacity(0.55))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
+                Button("Retry") {
+                    Task {
+                        await viewModel.generateContent()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.white)
+                .foregroundStyle(.black)
+                .disabled(viewModel.isLoading)
             } else {
                 Image(systemName: "play.rectangle.fill")
                     .font(.system(size: 56))
@@ -126,6 +135,7 @@ struct ReelsView: View {
                     .foregroundStyle(.white.opacity(0.35))
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
     
     private var topOverlay: some View {

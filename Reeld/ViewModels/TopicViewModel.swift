@@ -18,10 +18,25 @@ final class TopicViewModel {
 
     private let service = OpenRouterService()
     private var streamBuffer = ""
-    private var chapterCount = 0
+    private var parser = ReelContentParser()
 
     private static let recentTopicsKey = "recentTopics"
     private static let maxRecentTopics = 5
+    static let systemPrompt = """
+    You are an educational assistant. Break the topic into many chapters.
+    Output only plain text using this exact structure, with no preamble and no markdown headings:
+
+    CHAPTER: Chapter Title Here
+    - Bullet 1 (35-50 words, 2-3 sentences, clear explanation)
+    - Bullet 2 (35-50 words, 2-3 sentences, clear explanation)
+    - ... continue until Bullet 10
+
+    Rules:
+    - Every chapter must have exactly 10 bullet points.
+    - Every bullet must be on its own line and start with "- ".
+    - Each bullet should be explanatory, not a short phrase.
+    - Do not include any text outside this format.
+    """
 
     init() {
         recentTopics = UserDefaults.standard.stringArray(forKey: Self.recentTopicsKey) ?? []
@@ -43,28 +58,10 @@ final class TopicViewModel {
         error = nil
         isLoading = true
         streamBuffer = ""
-        chapterCount = 0
-
-        let systemPrompt = """
-        You are a concise educational assistant. Break the topic into many chapters.
-        Format your ENTIRE response exactly like this template with no preamble or extra text:
-
-        CHAPTER: Chapter Title Here
-        - Key concept explained in 50 words or less
-        - Another key concept in 50 words or less
-        - Third key concept in 50 words or less
-
-        CHAPTER: Second Chapter Title
-        - First point in 50 words or less
-        - Second point in 50 words or less
-        - Third point in 50 words or less
-
-        Every chapter must have exactly 10 bullet points starting with "- ".
-        Do not include any other text outside this format.
-        """
+        parser.reset()
 
         do {
-            let stream = service.stream(prompt: trimmedTopic, systemPrompt: systemPrompt, apiKey: apiKey)
+            let stream = service.stream(prompt: trimmedTopic, systemPrompt: Self.systemPrompt, apiKey: apiKey)
             for try await token in stream {
                 streamBuffer += token
                 processBuffer()
@@ -100,18 +97,49 @@ final class TopicViewModel {
     }
 
     private func processLine(_ line: String) {
+        guard let reel = parser.parseLine(line) else { return }
+        reels.append(reel)
+    }
+}
+
+struct ReelContentParser {
+    private(set) var chapterCount = 0
+
+    mutating func reset() {
+        chapterCount = 0
+    }
+
+    mutating func parseLine(_ line: String) -> Reel? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else { return nil }
 
         if trimmed.hasPrefix("CHAPTER:") {
             let title = String(trimmed.dropFirst(8)).trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !title.isEmpty else { return }
+            guard !title.isEmpty else { return nil }
             chapterCount += 1
-            reels.append(Reel(content: .chapterTitle(index: chapterCount, title: title)))
-        } else if trimmed.hasPrefix("- ") {
-            let text = String(trimmed.dropFirst(2)).trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { return }
-            reels.append(Reel(content: .content(chapterIndex: chapterCount, text: text)))
+            return Reel(content: .chapterTitle(index: chapterCount, title: title))
         }
+
+        guard chapterCount > 0, let text = Self.extractBulletText(from: trimmed), !text.isEmpty else {
+            return nil
+        }
+
+        return Reel(content: .content(chapterIndex: chapterCount, text: text))
+    }
+
+    static func extractBulletText(from line: String) -> String? {
+        if line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("• ") {
+            return String(line.dropFirst(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        if let regex = try? NSRegularExpression(pattern: #"^\d+[.)]\s+"#) {
+            let range = NSRange(line.startIndex..., in: line)
+            if let match = regex.firstMatch(in: line, options: [], range: range),
+               let swiftRange = Range(match.range, in: line) {
+                return String(line[swiftRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+        }
+
+        return nil
     }
 }

@@ -26,7 +26,7 @@ struct HomeView: View {
             Color.black.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Spacer(minLength: 72)
+                Spacer(minLength: 28)
                 heroSection
                 Spacer()
                 bottomComposer
@@ -34,7 +34,23 @@ struct HomeView: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
         }
+        .safeAreaInset(edge: .top) {
+            topHeader
+        }
         .preferredColorScheme(.dark)
+    }
+
+    private var topHeader: some View {
+        HStack {
+            Text("Reeld")
+                .font(.largeTitle.bold())
+                .foregroundStyle(.white)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
+        .background(.black.opacity(0.94))
     }
 
     private var heroSection: some View {
