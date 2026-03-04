@@ -9,52 +9,65 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var viewModel = TopicViewModel()
-    @State private var selectedTab = 0
+    @State private var isShowingFeed = false
+    @State private var isShowingSettings = false
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            Tab("Learn", systemImage: "sparkles", value: 0) {
-                NavigationStack {
-                    HomeView(
-                        viewModel: viewModel,
-                        onOpenFeed: {
-                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                selectedTab = 1
-                            }
-                        }
-                    )
-                        .toolbar(.hidden, for: .navigationBar)
-                }
-            }
-            Tab("Feed", systemImage: "play.fill", value: 1) {
+        ZStack {
+            if isShowingFeed {
                 NavigationStack {
                     ReelsView(
                         viewModel: viewModel,
                         onBack: {
                             withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                                selectedTab = 0
+                                isShowingFeed = false
                             }
                         }
                     )
-                        .toolbar(.hidden, for: .navigationBar)
+                    .toolbar(.hidden, for: .navigationBar)
                 }
-            }
-            Tab("Settings", systemImage: "gearshape.fill", value: 2) {
+                .transition(.opacity)
+            } else {
                 NavigationStack {
-                    SettingsView()
-                        .toolbar(.hidden, for: .navigationBar)
+                    HomeView(
+                        viewModel: viewModel,
+                        onOpenSettings: {
+                            isShowingSettings = true
+                        },
+                        onOpenFeed: {
+                            isSearchFocused = false
+                            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                                isShowingFeed = true
+                            }
+                        }
+                    )
+                    .toolbar(.hidden, for: .navigationBar)
+                }
+                .transition(.opacity)
+            }
+        }
+        .animation(.spring(response: 0.45, dampingFraction: 0.82), value: isShowingFeed)
+        .safeAreaInset(edge: .bottom) {
+            if !isShowingFeed {
+                FloatingSearchBar(viewModel: viewModel, isSearchFocused: $isSearchFocused) {
+                    Task { await viewModel.generateContent() }
                 }
             }
         }
-        .tint(.white)
         .preferredColorScheme(.dark)
-        .toolbarBackground(.visible, for: .tabBar)
-        .toolbarBackground(.ultraThinMaterial, for: .tabBar)
-        .toolbarColorScheme(.dark, for: .tabBar)
+        .sheet(isPresented: $isShowingSettings) {
+            NavigationStack {
+                SettingsView()
+                    .toolbar(.hidden, for: .navigationBar)
+            }
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+        }
         .onChange(of: viewModel.isLoading) { _, isLoading in
             if isLoading {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                    selectedTab = 1
+                    isShowingFeed = true
                 }
             }
         }

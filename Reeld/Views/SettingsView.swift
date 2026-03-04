@@ -8,11 +8,14 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
     @AppStorage(Config.apiKeyUserDefaultsKey) private var apiKey: String = ""
     @State private var isTokenVisible = false
     @State private var showClearConfirm = false
 
-    private var isConfigured: Bool { !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    private var isConfigured: Bool {
+        !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         ZStack {
@@ -38,7 +41,7 @@ struct SettingsView: View {
 
     private var topHeader: some View {
         HStack {
-            Text("Reeld")
+            Text("Settings")
                 .font(.largeTitle.bold())
                 .foregroundStyle(.white)
             Spacer()

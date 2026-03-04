@@ -40,11 +40,14 @@ struct ReelsView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
-        .toolbar(viewModel.reels.isEmpty ? .visible : .hidden, for: .tabBar)
         .safeAreaInset(edge: .top) {
             if !viewModel.reels.isEmpty {
                 topOverlay
             }
+        }
+        .onChange(of: currentID) { oldValue, newValue in
+            guard oldValue != nil, newValue != oldValue else { return }
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         }
     }
 
@@ -57,8 +60,9 @@ struct ReelsView: View {
                     ZStack {
                         ReelCardView(
                             reel: reel,
-                            reels: viewModel.reels,
-                            currentIndex: currentIndex
+                            currentIndex: currentIndex,
+                            cardIndex: offset,
+                            totalCount: viewModel.reels.count
                         )
 
                         if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
@@ -76,10 +80,6 @@ struct ReelsView: View {
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
         .ignoresSafeArea()
-        .onChange(of: currentID) { oldValue, newValue in
-            guard oldValue != nil, newValue != oldValue else { return }
-            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-        }
         .onChange(of: viewModel.reels.count) { _, _ in
             if currentID == nil {
                 currentID = viewModel.reels.first?.id
@@ -142,7 +142,7 @@ struct ReelsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
-    
+
     private var topOverlay: some View {
         VStack(spacing: 10) {
             HStack {
@@ -157,19 +157,14 @@ struct ReelsView: View {
                 }
                 .buttonStyle(.plain)
 
+                Spacer()
+            }
+            .overlay {
                 Text(topTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.9))
                     .lineLimit(1)
-                
-                Spacer()
-                
-                Text("\(currentIndex + 1)/\(max(viewModel.reels.count, 1))")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(.white.opacity(0.12), in: Capsule())
+                    .padding(.horizontal, 44)
             }
         }
         .padding(.horizontal, 16)

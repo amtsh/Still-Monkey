@@ -18,16 +18,15 @@ private func chapterAccent(for chapterIndex: Int) -> Color {
 // MARK: – Progress bar
 
 struct ReelProgressBar: View {
-    let reels: [Reel]
+    let totalSegments: Int
     let currentIndex: Int
 
     var body: some View {
         HStack(spacing: 3) {
-            ForEach(Array(reels.enumerated()), id: \.element.id) { offset, _ in
+            ForEach(0..<max(totalSegments, 0), id: \.self) { offset in
                 Capsule()
                     .fill(segmentColor(at: offset))
                     .frame(height: 2.5)
-                    .animation(.spring(response: 0.35, dampingFraction: 0.8), value: currentIndex)
             }
         }
         .padding(.horizontal, 16)
@@ -44,37 +43,47 @@ struct ReelProgressBar: View {
 
 struct ReelCardView: View {
     let reel: Reel
-    let reels: [Reel]
     let currentIndex: Int
-
-    private var isFirst: Bool { currentIndex == 0 }
-    private var total: Int { reels.count }
+    let cardIndex: Int
+    let totalCount: Int
 
     var body: some View {
-        ZStack(alignment: .top) {
-            switch reel.content {
-            case .chapterTitle(let index, let title):
-                ChapterTitleCard(index: index, title: title)
-            case .content(let chapterIndex, let text):
-                ContentCard(chapterIndex: chapterIndex, text: text)
-            }
-
-            VStack(spacing: 0) {
-                VStack(spacing: 10) {
-                    ReelProgressBar(reels: reels, currentIndex: currentIndex)
-                    HStack {
-                        Text("REEL \(currentIndex + 1) OF \(total)")
-                            .font(.caption2.weight(.semibold))
-                            .tracking(0.9)
-                            .foregroundStyle(.white.opacity(0.55))
-                        Spacer()
-                    }
-                    .padding(.horizontal, 18)
+        GeometryReader { proxy in
+            cardContent
+                .overlay(alignment: .bottom) {
+                    ReelProgressBar(totalSegments: totalCount, currentIndex: currentIndex)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
+                        .offset(y: reelBarOffset(for: proxy))
+                        .opacity(reelBarVisibility(for: proxy))
+                        .allowsHitTesting(false)
                 }
-                .padding(.top, 16)
-                Spacer()
-            }
+                .clipped()
         }
+    }
+
+    @ViewBuilder
+    private var cardContent: some View {
+        switch reel.content {
+        case .chapterTitle(let index, let title):
+            ChapterTitleCard(index: index, title: title)
+        case .content(let chapterIndex, let text):
+            ContentCard(chapterIndex: chapterIndex, text: text)
+        }
+    }
+
+    private func reelBarVisibility(for proxy: GeometryProxy) -> Double {
+        let minY = proxy.frame(in: .global).minY
+        let pageHeight = max(proxy.size.height, 1)
+        let restingMinY = CGFloat(cardIndex - currentIndex) * pageHeight
+        let distanceFromRest = abs(minY - restingMinY)
+        return min(max(distanceFromRest / 120, 0), 1)
+    }
+
+    private func reelBarOffset(for proxy: GeometryProxy) -> CGFloat {
+        let hiddenOffset: CGFloat = 36
+        let visibility = reelBarVisibility(for: proxy)
+        return hiddenOffset * (1 - visibility)
     }
 }
 
@@ -151,11 +160,6 @@ private struct ContentCard: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                chapterPill
-                    .padding(.top, 52)
-                    .padding(.leading, 28)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
                 Spacer()
 
                 Text(text)
@@ -178,18 +182,6 @@ private struct ContentCard: View {
             }
         }
         .onDisappear { appeared = false }
-    }
-
-    private var chapterPill: some View {
-        Text("Ch. \(chapterIndex)")
-            .font(.caption2)
-            .bold()
-            .tracking(0.5)
-            .foregroundStyle(accent.opacity(0.9))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(accent.opacity(0.12), in: Capsule())
-            .overlay(Capsule().stroke(accent.opacity(0.25), lineWidth: 1))
     }
 }
 

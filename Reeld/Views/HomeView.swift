@@ -9,12 +9,8 @@ import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
+    var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
-    @FocusState private var isTextFieldFocused: Bool
-
-    private var canStart: Bool {
-        !viewModel.isLoading && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
 
     private var recentItems: [RecentContentSnapshot] {
         Array(viewModel.recentItems.prefix(10))
@@ -43,7 +39,6 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     heroCard
                     recentItemsSection
-                    bottomComposer
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 14)
@@ -62,6 +57,17 @@ struct HomeView: View {
                 .font(.largeTitle.bold())
                 .foregroundStyle(.white)
             Spacer()
+            Button {
+                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+                onOpenSettings?()
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .frame(width: 36, height: 36)
+                    .background(.white.opacity(0.1), in: Circle())
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 16)
         .padding(.top, 6)
@@ -108,7 +114,7 @@ struct HomeView: View {
 
     private var recentItemsSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Recent")
+            Text("Today")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.white)
 
@@ -130,7 +136,7 @@ struct HomeView: View {
                         .stroke(.white.opacity(0.08), lineWidth: 1)
                 )
             } else {
-                groupedRecentSection(title: "Today", items: todayItems)
+                groupedRecentSection(title: "", items: todayItems)
                 groupedRecentSection(title: "Yesterday", items: yesterdayItems)
                 groupedRecentSection(title: "Earlier", items: earlierItems)
             }
@@ -141,16 +147,15 @@ struct HomeView: View {
     private func groupedRecentSection(title: String, items: [RecentContentSnapshot]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text(title)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.52))
-                    .textCase(.uppercase)
-                    .tracking(0.8)
-                    .padding(.horizontal, 2)
+                if !title.isEmpty {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
+                }
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        recentRow(item)
+                        recentRow(item, isLastSeen: item.id == recentItems.first?.id)
 
                         if index < items.count - 1 {
                             Divider().background(.white.opacity(0.08))
@@ -166,7 +171,7 @@ struct HomeView: View {
         }
     }
 
-    private func recentRow(_ item: RecentContentSnapshot) -> some View {
+    private func recentRow(_ item: RecentContentSnapshot, isLastSeen: Bool) -> some View {
         Button {
             openRecent(item)
         } label: {
@@ -178,12 +183,14 @@ struct HomeView: View {
 
                 Spacer()
 
-                Text(item.modeLabel)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(.white.opacity(0.1), in: Capsule())
+                if isLastSeen {
+                    Text("Last seen")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(.white.opacity(0.1), in: Capsule())
+                }
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -196,88 +203,7 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    private var bottomComposer: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Menu {
-                ForEach(ContentMode.allCases, id: \.self) { mode in
-                    Button {
-                        viewModel.contentMode = mode
-                    } label: {
-                        if viewModel.contentMode == mode {
-                            Label(mode.tabLabel, systemImage: "checkmark")
-                        } else {
-                            Text(mode.tabLabel)
-                        }
-                    }
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Text(viewModel.contentMode.tabLabel)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                }
-                .foregroundStyle(.white.opacity(0.9))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(.white.opacity(0.12), in: Capsule())
-                .overlay(Capsule().stroke(.white.opacity(0.1), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-
-            HStack(spacing: 8) {
-                TextField(viewModel.contentMode.composerPlaceholder, text: $viewModel.topic)
-                    .font(.system(size: 16, weight: .regular, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.92))
-                    .focused($isTextFieldFocused)
-                    .submitLabel(.go)
-                    .onSubmit { startLearning() }
-
-                Button(action: startLearning) {
-                    Group {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .tint(.black)
-                        } else {
-                            Image(systemName: "arrow.up")
-                                .font(.system(size: 22, weight: .semibold))
-                        }
-                    }
-                    .foregroundStyle(.black)
-                    .frame(width: 44, height: 44)
-                    .background(
-                        Circle()
-                            .fill(canStart ? .white.opacity(0.78) : .white.opacity(0.3))
-                    )
-                }
-                .disabled(!canStart)
-                .buttonStyle(.plain)
-            }
-            .padding(.leading, 14)
-            .padding(.trailing, 8)
-            .padding(.vertical, 7)
-            .background(.clear, in: Capsule())
-            .overlay(
-                Capsule().stroke(.white.opacity(0.55), lineWidth: 1.4)
-            )
-
-            if let error = viewModel.error {
-                Text(error)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.orange.opacity(0.95))
-                    .padding(.leading, 6)
-            }
-        }
-    }
-
-    private func startLearning() {
-        isTextFieldFocused = false
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        Task { await viewModel.generateContent() }
-    }
-
     private func openRecent(_ snapshot: RecentContentSnapshot) {
-        isTextFieldFocused = false
         UIImpactFeedbackGenerator(style: .soft).impactOccurred()
         viewModel.loadRecentSnapshot(snapshot)
         onOpenFeed?()
