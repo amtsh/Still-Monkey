@@ -9,6 +9,6 @@ import Foundation
 
 enum Config {
     static let openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions"
-    static let openRouterModel = "openrouter/free"
+    static let openRouterModel = "x-ai/grok-4.1-fast"
     static let apiKeyUserDefaultsKey = "openRouterAPIKey"
 }

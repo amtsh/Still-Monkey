@@ -50,6 +50,7 @@ struct SettingsSectionGlassModifier: ViewModifier {
 
 struct GlassCardModifier: ViewModifier {
     var cornerRadius: CGFloat = 14
+    var showBorder: Bool = true
 
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
@@ -60,7 +61,7 @@ struct GlassCardModifier: ViewModifier {
                 .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(.white.opacity(0.08), lineWidth: 1)
+                        .stroke(.white.opacity(showBorder ? 0.08 : 0), lineWidth: 1)
                 )
         }
     }
@@ -71,7 +72,7 @@ extension View {
         modifier(GlassBackgroundModifier(shape: shape, interactive: interactive))
     }
 
-    func glassCard(cornerRadius: CGFloat = 14) -> some View {
-        modifier(GlassCardModifier(cornerRadius: cornerRadius))
+    func glassCard(cornerRadius: CGFloat = 14, showBorder: Bool = true) -> some View {
+        modifier(GlassCardModifier(cornerRadius: cornerRadius, showBorder: showBorder))
     }
 }

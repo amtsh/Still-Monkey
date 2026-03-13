@@ -1,6 +1,55 @@
 import Foundation
 
 struct OpenRouterService {
+    func fetchJSON(prompt: String, systemPrompt: String, apiKey: String) async throws -> String {
+        guard let url = URL(string: Config.openRouterEndpoint) else {
+            throw OpenRouterError.invalidEndpoint
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        let body: [String: Any] = [
+            "model": Config.openRouterModel,
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": prompt]
+            ],
+            "temperature": 0.6,
+            "max_tokens": 500,
+            "stream": false
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OpenRouterError.invalidResponse
+        }
+
+        if httpResponse.statusCode != 200 {
+            throw OpenRouterError.httpError(httpResponse.statusCode, "Request failed")
+        }
+
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        if let error = json?["error"] as? [String: Any],
+           let message = error["message"] as? String {
+            throw OpenRouterError.streamFailed(message)
+        }
+
+        guard
+            let choices = json?["choices"] as? [[String: Any]],
+            let message = choices.first?["message"] as? [String: Any],
+            let content = message["content"] as? String
+        else {
+            throw OpenRouterError.invalidResponse
+        }
+
+        return content
+    }
+
     func stream(prompt: String, systemPrompt: String, apiKey: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {

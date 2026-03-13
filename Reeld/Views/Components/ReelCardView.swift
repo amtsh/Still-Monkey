@@ -13,6 +13,7 @@ struct ReelCardView: View {
     let totalCount: Int
     let chapterTitle: String?
     let topicTitle: String
+    let showsProgressBar: Bool
 
     var body: some View {
         GeometryReader { proxy in
@@ -22,7 +23,7 @@ struct ReelCardView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
                         .offset(y: reelBarOffset(for: proxy))
-                        .opacity(reelBarVisibility(for: proxy))
+                        .opacity(showsProgressBar ? reelBarVisibility(for: proxy) : 0)
                         .allowsHitTesting(false)
                 }
                 .clipped()
@@ -73,15 +74,7 @@ private struct ChapterTitleCard: View {
         ZStack {
             Color.black
 
-            RadialGradient(
-                colors: [accent.opacity(0.22), .clear],
-                center: .center,
-                startRadius: 0,
-                endRadius: 340
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 22) {
+            VStack(spacing: 18) {
                 Text("Chapter \(index)")
                     .font(.caption)
                     .bold()
@@ -93,14 +86,14 @@ private struct ChapterTitleCard: View {
                     .overlay(Capsule().stroke(accent.opacity(0.3), lineWidth: 1))
 
                 Text(title)
-                    .font(.system(size: 42, weight: .bold))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, 28)
                     .minimumScaleFactor(0.8)
 
                 Text(topicTitle)
-                    .font(.caption.weight(.semibold))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.62))
                     .lineLimit(1)
                     .padding(.horizontal, 32)
@@ -124,54 +117,42 @@ private struct ContentCard: View {
     let text: String
     @State private var appeared = false
 
-    private var accent: Color {
-        chapterAccent(for: chapterIndex)
-    }
-
     var body: some View {
         ZStack {
             Color.black
 
-            RadialGradient(
-                colors: [accent.opacity(0.1), .clear],
-                center: UnitPoint(x: 0.8, y: 0.1),
-                startRadius: 0,
-                endRadius: 280
-            )
-            .ignoresSafeArea()
-
             VStack(spacing: 0) {
-                Spacer(minLength: 86)
+                Spacer(minLength: 48)
 
                 Text(text)
-                    .font(.system(size: 25, weight: .regular))
+                    .font(.system(size: 17, weight: .regular))
                     .foregroundStyle(.white)
-                    .lineSpacing(5)
-                    .padding(.horizontal, 28)
+                    .lineSpacing(4)
+                    .padding(.horizontal, 24)
                     .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.75)
-                    .lineLimit(16)
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(24)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 18)
 
-                Spacer(minLength: 170)
+                Spacer(minLength: 120)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("\(chapterIndex). \(chapterTitle ?? "Chapter \(chapterIndex)")")
-                        .font(.caption.weight(.semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.62))
                         .lineLimit(1)
                     Text(topicTitle)
-                        .font(.caption2.weight(.medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.white.opacity(0.48))
                         .lineLimit(1)
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 72)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 56)
                 .opacity(appeared ? 1 : 0)
                 .offset(y: appeared ? 0 : 12)
             }

@@ -12,6 +12,7 @@ struct ReelsView: View {
     let viewModel: TopicViewModel
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
+    @State private var isRestoringPosition = true
 
     private var topicTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
@@ -43,10 +44,15 @@ struct ReelsView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            isRestoringPosition = true
             applyInitialPositionIfNeeded()
+            revealProgressBarAfterRestore()
         }
         .onChange(of: currentID) { oldValue, newValue in
             viewModel.recordCurrentReelID(newValue)
+            if isRestoringPosition, newValue != nil {
+                isRestoringPosition = false
+            }
             guard oldValue != nil, newValue != oldValue else { return }
             HapticsFeedback.impactSoft()
         }
@@ -65,7 +71,8 @@ struct ReelsView: View {
                             cardIndex: offset,
                             totalCount: viewModel.reels.count,
                             chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
-                            topicTitle: topicTitle
+                            topicTitle: topicTitle,
+                            showsProgressBar: !isRestoringPosition
                         )
 
                         if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
@@ -83,22 +90,43 @@ struct ReelsView: View {
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
         .onChange(of: viewModel.reels.map(\.id)) { _, _ in
+            isRestoringPosition = true
             applyInitialPositionIfNeeded()
+            revealProgressBarAfterRestore()
         }
     }
 
     private func applyInitialPositionIfNeeded() {
         guard !viewModel.reels.isEmpty else { return }
 
+        let savedID = viewModel.consumePendingStartReelID()
+        if let savedID, viewModel.reels.contains(where: { $0.id == savedID }) {
+            // Snap to the saved reel without transition animation.
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                currentID = savedID
+            }
+            return
+        }
+
         if let currentID, viewModel.reels.contains(where: { $0.id == currentID }) {
             return
         }
 
-        let savedID = viewModel.consumePendingStartReelID()
-        if let savedID, viewModel.reels.contains(where: { $0.id == savedID }) {
-            currentID = savedID
-        } else {
-            currentID = viewModel.reels.first?.id
+        if let firstID = viewModel.reels.first?.id {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                currentID = firstID
+            }
+        }
+    }
+
+    private func revealProgressBarAfterRestore() {
+        Task { @MainActor in
+            await Task.yield()
+            isRestoringPosition = false
         }
     }
 
@@ -193,3 +221,4 @@ struct ReelsView: View {
         dismiss()
     }
 }
+
