@@ -9,35 +9,81 @@ import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
+    @Bindable var courseViewModel: DuolingoCourseViewModel
+
+    private enum HomeRecentItem: Identifiable {
+        case reel(RecentContentSnapshot)
+        case duolingo(DuolingoCourseSnapshot)
+
+        var id: String {
+            switch self {
+            case .reel(let snapshot):
+                return snapshot.id
+            case .duolingo(let snapshot):
+                return snapshot.id
+            }
+        }
+
+        var updatedAt: Date {
+            switch self {
+            case .reel(let snapshot):
+                return snapshot.updatedAt
+            case .duolingo(let snapshot):
+                return snapshot.updatedAt
+            }
+        }
+
+        var displayTopic: String {
+            switch self {
+            case .reel(let snapshot):
+                return snapshot.displayTopic
+            case .duolingo(let snapshot):
+                return snapshot.displayTopic
+            }
+        }
+
+        var iconName: String {
+            switch self {
+            case .reel(let snapshot):
+                return snapshot.mode == .story ? "moon.zzz" : "book"
+            case .duolingo:
+                return "point.3.connected.trianglepath.dotted"
+            }
+        }
+    }
+
     @State private var searchText = ""
     @State private var isEditingHistory = false
-    @State private var pendingDeleteSnapshot: RecentContentSnapshot?
+    @State private var pendingDeleteItem: HomeRecentItem?
     @State private var suggestedViewModel = SuggestedTopicsViewModel()
     @State private var isShowingDeleteConfirmation = false
     var isSearchFocused: FocusState<Bool>.Binding
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
+    var onOpenCourseMap: (() -> Void)? = nil
     var onStartLearning: (() -> Void)? = nil
 
     private var canStart: Bool {
-        !viewModel.isLoading && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !(viewModel.isLoading || courseViewModel.isLoading)
+            && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var recentItems: [RecentContentSnapshot] {
-        viewModel.recentItems
+    private var recentItems: [HomeRecentItem] {
+        (viewModel.recentItems.map(HomeRecentItem.reel) + courseViewModel.recentCourses.map(HomeRecentItem.duolingo))
+            .sorted(by: { $0.updatedAt > $1.updatedAt })
     }
 
-    private var todayItems: [RecentContentSnapshot] {
+    private var todayItems: [HomeRecentItem] {
         let calendar = Calendar.current
         return recentItems.filter { calendar.isDateInToday($0.updatedAt) }
     }
 
-    private var yesterdayItems: [RecentContentSnapshot] {
+    private var yesterdayItems: [HomeRecentItem] {
         let calendar = Calendar.current
         return recentItems.filter { calendar.isDateInYesterday($0.updatedAt) }
     }
 
-    private var earlierItems: [RecentContentSnapshot] {
+    private var earlierItems: [HomeRecentItem] {
         let calendar = Calendar.current
         return recentItems.filter { !calendar.isDateInToday($0.updatedAt) && !calendar.isDateInYesterday($0.updatedAt) }
     }
@@ -106,7 +152,7 @@ struct HomeView: View {
                 confirmDeleteRecent()
             }
             Button("Cancel", role: .cancel) {
-                pendingDeleteSnapshot = nil
+                pendingDeleteItem = nil
             }
         } message: {
             Text("This action cannot be undone.")
@@ -158,7 +204,7 @@ struct HomeView: View {
     }
 
     private var recentItemsSection: some View {
-        let sections: [(id: String, title: String, items: [RecentContentSnapshot])] = [
+        let sections: [(id: String, title: String, items: [HomeRecentItem])] = [
             ("today", "Recent", todayItems),
             ("yesterday", "Yesterday", yesterdayItems),
             ("earlier", "Earlier", earlierItems),
@@ -172,7 +218,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func groupedRecentSection(id _: String, title: String, items: [RecentContentSnapshot]) -> some View {
+    private func groupedRecentSection(id _: String, title: String, items: [HomeRecentItem]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {
@@ -195,7 +241,7 @@ struct HomeView: View {
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        recentRow(item, isLastSeen: item.id == viewModel.lastAccessedRecentID)
+                        recentRow(item, isLastSeen: isLastSeen(item))
 
                         if index < items.count - 1 {
                             Divider()
@@ -209,10 +255,9 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func recentRow(_ item: RecentContentSnapshot, isLastSeen: Bool) -> some View {
-        let iconName = item.mode == .story ? "moon.zzz" : "book"
+    private func recentRow(_ item: HomeRecentItem, isLastSeen: Bool) -> some View {
         let row = SearchRowView(
-            iconName: iconName,
+            iconName: item.iconName,
             title: item.displayTopic,
             trailingLabel: isLastSeen ? "Last seen" : nil,
             isEditing: isEditingHistory,
@@ -234,21 +279,40 @@ struct HomeView: View {
         }
     }
 
-    private func openRecent(_ snapshot: RecentContentSnapshot) {
+    private func openRecent(_ item: HomeRecentItem) {
         HapticsFeedback.impactSoft()
-        viewModel.loadRecentSnapshot(snapshot)
-        onOpenFeed?()
+
+        switch item {
+        case .reel(let snapshot):
+            viewModel.contentMode = snapshot.mode
+            viewModel.loadRecentSnapshot(snapshot)
+            searchText = snapshot.topic
+            onOpenFeed?()
+        case .duolingo(let snapshot):
+            viewModel.contentMode = .duolingo
+            viewModel.topic = snapshot.topic
+            searchText = snapshot.topic
+            courseViewModel.loadRecentCourse(snapshot)
+            onOpenCourseMap?()
+        }
     }
 
-    private func requestDeleteRecent(_ snapshot: RecentContentSnapshot) {
-        pendingDeleteSnapshot = snapshot
+    private func requestDeleteRecent(_ item: HomeRecentItem) {
+        pendingDeleteItem = item
         isShowingDeleteConfirmation = true
     }
 
     private func confirmDeleteRecent() {
-        guard let snapshot = pendingDeleteSnapshot else { return }
-        viewModel.deleteRecentSnapshot(snapshot)
-        pendingDeleteSnapshot = nil
+        guard let item = pendingDeleteItem else { return }
+
+        switch item {
+        case .reel(let snapshot):
+            viewModel.deleteRecentSnapshot(snapshot)
+        case .duolingo(let snapshot):
+            courseViewModel.deleteRecentCourse(snapshot)
+        }
+
+        pendingDeleteItem = nil
     }
 
     private func startLearning() {
@@ -256,5 +320,14 @@ struct HomeView: View {
         isSearchFocused.wrappedValue = false
         HapticsFeedback.impactMedium()
         onStartLearning?()
+    }
+
+    private func isLastSeen(_ item: HomeRecentItem) -> Bool {
+        switch item {
+        case .reel(let snapshot):
+            return snapshot.id == viewModel.lastAccessedRecentID
+        case .duolingo(let snapshot):
+            return snapshot.id == courseViewModel.lastAccessedCourseID
+        }
     }
 }

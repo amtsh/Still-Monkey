@@ -20,11 +20,11 @@ struct FloatingSearchBar: View {
                                 .padding(.vertical, 6)
                                 .background(
                                     Capsule()
-                                        .fill(isSelected ? Color.orange.opacity(0.22) : Color.clear)
+                                        .fill(isSelected ? accentColor(for: mode).opacity(0.24) : Color.clear)
                                 )
                                 .overlay(
                                     Capsule()
-                                        .stroke(isSelected ? Color.orange.opacity(0.55) : .white.opacity(0.28), lineWidth: 1)
+                                        .stroke(isSelected ? accentColor(for: mode).opacity(0.62) : .white.opacity(0.28), lineWidth: 1)
                                 )
                                 .glassBackground(in: Capsule(), interactive: true)
                         }
@@ -50,6 +50,17 @@ struct FloatingSearchBar: View {
             if !ContentMode.allCases.contains(viewModel.contentMode) {
                 viewModel.contentMode = .learn
             }
+        }
+    }
+
+    private func accentColor(for mode: ContentMode) -> Color {
+        switch mode {
+        case .learn:
+            return .orange
+        case .story:
+            return .pink
+        case .duolingo:
+            return Color(red: 0.42, green: 0.82, blue: 0.42)
         }
     }
 }

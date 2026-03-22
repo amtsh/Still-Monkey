@@ -1,7 +1,22 @@
 import Foundation
 
+protocol OpenRouterServing {
+    func fetchJSON(
+        prompt: String,
+        systemPrompt: String,
+        apiKey: String,
+        maxTokens: Int
+    ) async throws -> String
+    func stream(prompt: String, systemPrompt: String, apiKey: String) -> AsyncThrowingStream<String, Error>
+}
+
 struct OpenRouterService {
-    func fetchJSON(prompt: String, systemPrompt: String, apiKey: String) async throws -> String {
+    func fetchJSON(
+        prompt: String,
+        systemPrompt: String,
+        apiKey: String,
+        maxTokens: Int = 500
+    ) async throws -> String {
         guard let url = URL(string: Config.openRouterEndpoint) else {
             throw OpenRouterError.invalidEndpoint
         }
@@ -19,7 +34,7 @@ struct OpenRouterService {
                 ["role": "user", "content": prompt]
             ],
             "temperature": 0.6,
-            "max_tokens": 500,
+            "max_tokens": maxTokens,
             "stream": false
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -161,3 +176,5 @@ struct OpenRouterService {
         }
     }
 }
+
+extension OpenRouterService: OpenRouterServing {}

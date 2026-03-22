@@ -14,7 +14,8 @@ final class SuggestedTopicsViewModel {
     var error: String?
     private var retryCount = 0
 
-    private let service = OpenRouterService()
+    private let service: any OpenRouterServing
+    private let userDefaults: UserDefaults
     private static let maxRetries = 3
     private static let cacheKey = "suggestedTopicsCache"
     private static let systemPrompt = """
@@ -23,12 +24,17 @@ final class SuggestedTopicsViewModel {
     """
     private static let userPrompt = "List of curious topics"
 
-    init() {
+    init(
+        service: any OpenRouterServing = OpenRouterService(),
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.service = service
+        self.userDefaults = userDefaults
         topics = loadCachedTopics()
     }
 
     func fetchTrendingTopics() async {
-        let apiKey = UserDefaults.standard.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
+        let apiKey = userDefaults.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
         guard !apiKey.isEmpty else {
             error = "Add OpenRouter API key in Settings."
             return
@@ -49,7 +55,8 @@ final class SuggestedTopicsViewModel {
                 let content = try await service.fetchJSON(
                     prompt: Self.userPrompt,
                     systemPrompt: Self.systemPrompt,
-                    apiKey: apiKey
+                    apiKey: apiKey,
+                    maxTokens: 300
                 )
                 if let parsed = parseTopics(from: content) {
                     topics = parsed
@@ -77,13 +84,13 @@ final class SuggestedTopicsViewModel {
     }
 
     private func loadCachedTopics() -> [String] {
-        guard let data = UserDefaults.standard.data(forKey: Self.cacheKey) else { return [] }
+        guard let data = userDefaults.data(forKey: Self.cacheKey) else { return [] }
         return (try? JSONDecoder().decode([String].self, from: data)) ?? []
     }
 
     private func saveCachedTopics(_ topics: [String]) {
         guard let data = try? JSONEncoder().encode(topics) else { return }
-        UserDefaults.standard.set(data, forKey: Self.cacheKey)
+        userDefaults.set(data, forKey: Self.cacheKey)
     }
 
     enum SuggestedTopicsError: Error {

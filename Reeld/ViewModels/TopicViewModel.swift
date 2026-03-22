@@ -29,7 +29,8 @@ final class TopicViewModel {
         )
     }
 
-    private let service = OpenRouterService()
+    private let service: any OpenRouterServing
+    private let userDefaults: UserDefaults
     private var streamBuffer = ""
     private var parser = ReelContentParser()
 
@@ -40,10 +41,15 @@ final class TopicViewModel {
     private var activeRecentSnapshotID: String?
     private var lastViewedReelIDsBySnapshotID: [String: String] = [:]
 
-    init() {
+    init(
+        service: any OpenRouterServing = OpenRouterService(),
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.service = service
+        self.userDefaults = userDefaults
         recentItems = loadRecentSnapshots()
-        lastAccessedRecentID = UserDefaults.standard.string(forKey: Self.lastAccessedRecentKey)
-        if let stored = UserDefaults.standard.dictionary(forKey: Self.recentSnapshotLastViewedReelIDsKey) as? [String: String] {
+        lastAccessedRecentID = userDefaults.string(forKey: Self.lastAccessedRecentKey)
+        if let stored = userDefaults.dictionary(forKey: Self.recentSnapshotLastViewedReelIDsKey) as? [String: String] {
             lastViewedReelIDsBySnapshotID = stored
         }
     }
@@ -51,8 +57,12 @@ final class TopicViewModel {
     func generateContent() async {
         let trimmedTopic = topic.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTopic.isEmpty else { return }
+        guard let prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic) else {
+            error = "This mode uses the lesson map flow."
+            return
+        }
 
-        let apiKey = UserDefaults.standard.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
+        let apiKey = userDefaults.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
         guard !apiKey.isEmpty else {
             error = "Add OpenRouter API key in Settings."
             return
@@ -65,7 +75,6 @@ final class TopicViewModel {
         parser.reset()
 
         do {
-            let prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic)
             let stream = service.stream(
                 prompt: prompt.userPrompt,
                 systemPrompt: prompt.systemPrompt,
@@ -110,7 +119,7 @@ final class TopicViewModel {
         streamBuffer = ""
         parser.reset()
         lastAccessedRecentID = snapshot.id
-        UserDefaults.standard.set(snapshot.id, forKey: Self.lastAccessedRecentKey)
+        userDefaults.set(snapshot.id, forKey: Self.lastAccessedRecentKey)
         activeRecentSnapshotID = snapshot.id
         pendingStartReelID = {
             guard
@@ -128,7 +137,7 @@ final class TopicViewModel {
             let reelID
         else { return }
         lastViewedReelIDsBySnapshotID[snapshotID] = reelID.uuidString
-        UserDefaults.standard.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+        userDefaults.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
     }
 
     func consumePendingStartReelID() -> Reel.ID? {
@@ -141,7 +150,7 @@ final class TopicViewModel {
 
         if lastAccessedRecentID == snapshot.id {
             lastAccessedRecentID = nil
-            UserDefaults.standard.removeObject(forKey: Self.lastAccessedRecentKey)
+            userDefaults.removeObject(forKey: Self.lastAccessedRecentKey)
         }
 
         if activeRecentSnapshotID == snapshot.id {
@@ -150,18 +159,18 @@ final class TopicViewModel {
         }
 
         lastViewedReelIDsBySnapshotID.removeValue(forKey: snapshot.id)
-        UserDefaults.standard.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+        userDefaults.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
 
         do {
             let data = try JSONEncoder().encode(recentItems)
-            UserDefaults.standard.set(data, forKey: Self.recentSnapshotsKey)
+            userDefaults.set(data, forKey: Self.recentSnapshotsKey)
         } catch {
             return
         }
     }
 
     private func loadRecentSnapshots() -> [RecentContentSnapshot] {
-        guard let data = UserDefaults.standard.data(forKey: Self.recentSnapshotsKey) else {
+        guard let data = userDefaults.data(forKey: Self.recentSnapshotsKey) else {
             return []
         }
 
@@ -192,7 +201,7 @@ final class TopicViewModel {
 
         do {
             let data = try JSONEncoder().encode(recentItems)
-            UserDefaults.standard.set(data, forKey: Self.recentSnapshotsKey)
+            userDefaults.set(data, forKey: Self.recentSnapshotsKey)
         } catch {
             return
         }
