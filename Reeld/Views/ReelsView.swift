@@ -53,8 +53,6 @@ struct ReelsView: View {
             if isRestoringPosition, newValue != nil {
                 isRestoringPosition = false
             }
-            guard oldValue != nil, newValue != oldValue else { return }
-            HapticsFeedback.impactSoft()
         }
     }
 

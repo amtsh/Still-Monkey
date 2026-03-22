@@ -172,7 +172,7 @@ struct HomeView: View {
     }
 
     @ViewBuilder
-    private func groupedRecentSection(id: String, title: String, items: [RecentContentSnapshot]) -> some View {
+    private func groupedRecentSection(id _: String, title: String, items: [RecentContentSnapshot]) -> some View {
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 12) {

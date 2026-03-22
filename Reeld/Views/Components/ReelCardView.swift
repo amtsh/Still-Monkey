@@ -110,6 +110,16 @@ private struct ChapterTitleCard: View {
     }
 }
 
+private func sentences(from text: String) -> [String] {
+    let pattern = "(?<=[.!?])\\s+"
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return [text] }
+    let range = NSRange(text.startIndex..., in: text)
+    let modified = regex.stringByReplacingMatches(in: text, range: range, withTemplate: "\n")
+    return modified.components(separatedBy: "\n")
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        .filter { !$0.isEmpty }
+}
+
 private struct ContentCard: View {
     let chapterIndex: Int
     let chapterTitle: String?
@@ -117,37 +127,42 @@ private struct ContentCard: View {
     let text: String
     @State private var appeared = false
 
+    private var sentenceParagraphs: [String] {
+        sentences(from: text)
+    }
+
     var body: some View {
         ZStack {
             Color.black
 
-            VStack(spacing: 0) {
-                Spacer(minLength: 48)
+            VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 28) {
+                    ForEach(Array(sentenceParagraphs.enumerated()), id: \.offset) { _, sentence in
+                        Text(sentence)
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineSpacing(10)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 40)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 18)
 
-                Text(text)
-                    .font(.system(size: 17, weight: .regular))
-                    .foregroundStyle(.white)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 24)
-                    .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.8)
-                    .lineLimit(24)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 18)
-
-                Spacer(minLength: 120)
+                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .overlay(alignment: .bottomLeading) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text("\(chapterIndex). \(chapterTitle ?? "Chapter \(chapterIndex)")")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.62))
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.85))
                         .lineLimit(1)
                     Text(topicTitle)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(.white.opacity(0.48))
                         .lineLimit(1)
                 }
