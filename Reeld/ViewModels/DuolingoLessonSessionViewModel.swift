@@ -76,6 +76,10 @@ final class DuolingoLessonSessionViewModel {
         courseViewModel.nextLessonID(after: lessonID)
     }
 
+    var firstContentPageID: PageID? {
+        reels.first.map { .reel($0.id) }
+    }
+
     func loadIfNeeded() async {
         guard !hasLoaded else { return }
         hasLoaded = true
@@ -130,6 +134,11 @@ final class DuolingoLessonSessionViewModel {
     func selectAnswer(_ answerIndex: Int, for question: QuizQuestion) {
         guard question.isValidChoiceIndex(answerIndex) else { return }
         courseViewModel.selectAnswer(answerIndex, for: question.id, lessonID: lessonID)
+        if progress?.areAllQuestionsAnswered == true {
+            latestResult = courseViewModel.submitQuizAnswers(lessonID: lessonID)
+        } else {
+            latestResult = nil
+        }
     }
 
     func choiceIsCorrect(_ choiceIndex: Int, for question: QuizQuestion) -> Bool {
@@ -137,7 +146,6 @@ final class DuolingoLessonSessionViewModel {
     }
 
     func shouldRevealAnswer(for question: QuizQuestion) -> Bool {
-        guard hasQuizAttempt else { return false }
         return progress?.selectedAnswerIndices[question.id] != nil
     }
 

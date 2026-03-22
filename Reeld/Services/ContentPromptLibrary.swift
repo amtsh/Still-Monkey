@@ -134,6 +134,7 @@ enum ContentPromptLibrary {
     Rules:
     - Return 2 to 4 chapters.
     - Each chapter must include 2 to 4 cards.
+    - Each card must contain at least 3 sentences.
     - Each card must be readable on mobile and stay focused on one idea.
     - Return 2 to 4 quiz questions.
     - Each quiz question must have 3 or 4 choices.

@@ -5,6 +5,7 @@ struct DuolingoLessonSessionView: View {
     @State private var viewModel: DuolingoLessonSessionViewModel
     @State private var currentPageID: DuolingoLessonSessionViewModel.PageID?
     @State private var hasAppliedInitialPosition = false
+    @State private var isPagingReady = false
 
     init(viewModel: DuolingoLessonSessionViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -35,12 +36,34 @@ struct DuolingoLessonSessionView: View {
                 loadingState
             } else if let error = viewModel.error, viewModel.pages.isEmpty {
                 errorState(message: error)
+            } else if !viewModel.pages.isEmpty && !isPagingReady {
+                loadingState
             } else {
                 pagedLesson
             }
         }
         .navigationTitle(viewModel.lesson?.title ?? "Lesson")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let firstContentPageID = viewModel.firstContentPageID {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        jumpToLessonStart(firstContentPageID)
+                    } label: {
+                        Image(systemName: "arrowshape.up")
+                            .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(
+                        currentPageID == firstContentPageID
+                            ? .white.opacity(0.28)
+                            : .white.opacity(0.88)
+                    )
+                    .disabled(currentPageID == firstContentPageID)
+                    .accessibilityLabel("Go to lesson start")
+                }
+            }
+        }
         .task {
             await viewModel.loadIfNeeded()
             applyInitialPositionIfNeeded()
@@ -152,16 +175,28 @@ struct DuolingoLessonSessionView: View {
     private func applyInitialPositionIfNeeded() {
         guard !hasAppliedInitialPosition, !viewModel.pages.isEmpty else { return }
         hasAppliedInitialPosition = true
+        isPagingReady = false
 
-        var transaction = Transaction()
-        transaction.animation = nil
-        withTransaction(transaction) {
-            currentPageID = viewModel.initialPageID()
+        Task { @MainActor in
+            await Task.yield()
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                currentPageID = viewModel.initialPageID()
+            }
+            await Task.yield()
+            isPagingReady = true
         }
     }
 
     private func currentIndexForPage(_ pageID: DuolingoLessonSessionViewModel.PageID) -> Int {
         viewModel.pages.firstIndex(of: pageID) ?? 0
+    }
+
+    private func jumpToLessonStart(_ firstContentPageID: DuolingoLessonSessionViewModel.PageID) {
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.84)) {
+            currentPageID = firstContentPageID
+        }
     }
 }
 
@@ -376,7 +411,7 @@ private struct LessonResultCard: View {
                         .buttonStyle(.borderedProminent)
                         .tint(.white)
                         .foregroundStyle(.black)
-                    } else {
+                    } else if !hasQuizAttempt {
                         Button("Check answers") {
                             onSubmit()
                         }

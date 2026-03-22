@@ -110,10 +110,7 @@ enum DuolingoPayloadParser {
         var reels: [Reel] = []
         for (index, chapter) in payload.chapters.enumerated() {
             let trimmedTitle = chapter.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            let cards = chapter.cards
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-                .prefix(4)
+            let cards = normalizedCards(from: chapter.cards).prefix(4)
 
             guard !trimmedTitle.isEmpty, !cards.isEmpty else { continue }
 
@@ -212,5 +209,50 @@ enum DuolingoPayloadParser {
             .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
 
         return collapsed
+    }
+
+    private static func normalizedCards(from cards: [String]) -> [String] {
+        let sentences = cards
+            .flatMap(sentenceChunks(from:))
+            .filter { !$0.isEmpty }
+
+        guard !sentences.isEmpty else { return [] }
+
+        var groupedCards: [String] = []
+        var currentChunk: [String] = []
+
+        for sentence in sentences {
+            currentChunk.append(sentence)
+            if currentChunk.count == 3 {
+                groupedCards.append(currentChunk.joined(separator: " "))
+                currentChunk.removeAll()
+            }
+        }
+
+        if !currentChunk.isEmpty {
+            if groupedCards.isEmpty {
+                groupedCards.append(currentChunk.joined(separator: " "))
+            } else {
+                groupedCards[groupedCards.count - 1] += " " + currentChunk.joined(separator: " ")
+            }
+        }
+
+        return groupedCards
+    }
+
+    private static func sentenceChunks(from value: String) -> [String] {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+
+        let pattern = "(?<=[.!?])\\s+"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [trimmed] }
+
+        let range = NSRange(trimmed.startIndex..., in: trimmed)
+        let separated = regex.stringByReplacingMatches(in: trimmed, range: range, withTemplate: "\n")
+
+        return separated
+            .components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
     }
 }

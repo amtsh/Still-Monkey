@@ -89,7 +89,7 @@ struct DuolingoCourseView: View {
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(.white)
 
-            Text(viewModel.topic.isEmpty ? "Search a topic to create a step-by-step course." : viewModel.topic.localizedCapitalized)
+            Text(courseSubtitle)
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.68))
         }
@@ -121,8 +121,6 @@ struct DuolingoCourseView: View {
                         VStack(spacing: 6) {
                             Image(systemName: iconName(for: state))
                                 .font(.system(size: 24, weight: .bold))
-                            Text("\(lesson.order)")
-                                .font(.system(size: 13, weight: .heavy))
                         }
                         .foregroundStyle(state == .locked ? .white.opacity(0.45) : .white)
                     }
@@ -132,9 +130,15 @@ struct DuolingoCourseView: View {
                 .accessibilityLabel(lesson.title)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(lesson.title)
-                        .font(.headline)
-                        .foregroundStyle(.white)
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(lesson.order).")
+                            .font(.headline.weight(.heavy))
+                            .foregroundStyle(.white.opacity(0.72))
+
+                        Text(lesson.title)
+                            .font(.headline)
+                            .foregroundStyle(.white)
+                    }
 
                     Text(lesson.summary)
                         .font(.subheadline)
@@ -242,6 +246,18 @@ struct DuolingoCourseView: View {
         case 1: return 0
         default: return 54
         }
+    }
+
+    private var courseSubtitle: String {
+        if let course = viewModel.course {
+            return "\(course.lessons.count) Lessons"
+        }
+
+        if viewModel.topic.isEmpty {
+            return "Search a topic to create a step-by-step course."
+        }
+
+        return "Building a lesson path for \(viewModel.topic.localizedCapitalized)"
     }
 
     private func iconName(for state: DuolingoLessonAccessState) -> String {

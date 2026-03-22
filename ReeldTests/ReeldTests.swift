@@ -162,9 +162,14 @@ struct ReeldTests {
             lesson: lesson
         )
 
-        #expect(progress.hydratedReels.count == 6)
+        #expect(progress.hydratedReels.count == 4)
         #expect(progress.quizQuestions.count == 2)
         #expect(progress.quizQuestions.first?.choices.count == 3)
+        for reel in progress.hydratedReels {
+            if case .content(_, let text) = reel.content {
+                #expect(sentenceCount(in: text) >= 3)
+            }
+        }
     }
 
     @MainActor
@@ -349,6 +354,10 @@ struct ReeldTests {
             isCompleted: false,
             lastSubmissionPassed: nil
         )
+    }
+
+    private func sentenceCount(in value: String) -> Int {
+        value.split(whereSeparator: { ".!?".contains($0) }).count
     }
 
     private func makeTestDefaults() -> (UserDefaults, String) {
