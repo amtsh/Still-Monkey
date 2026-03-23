@@ -55,7 +55,7 @@ final class DuolingoCourseViewModel {
 
         do {
             let prompt = ContentPromptLibrary.duolingoCoursePrompt(topic: trimmedTopic)
-            let content = try await fetchJSONWithRetry(
+            let content = try await service.fetchJSONWithRetry(
                 prompt: prompt.userPrompt,
                 systemPrompt: prompt.systemPrompt,
                 apiKey: apiKey,
@@ -148,7 +148,7 @@ final class DuolingoCourseViewModel {
             completedLessonTitles: completedTitles
         )
 
-        let content = try await fetchJSONWithRetry(
+        let content = try await service.fetchJSONWithRetry(
             prompt: prompt.userPrompt,
             systemPrompt: prompt.systemPrompt,
             apiKey: apiKey,
@@ -254,30 +254,6 @@ final class DuolingoCourseViewModel {
     private func persistRecentCourses() {
         guard let data = try? JSONEncoder().encode(recentCourses) else { return }
         userDefaults.set(data, forKey: Self.recentCoursesKey)
-    }
-
-    private func fetchJSONWithRetry(
-        prompt: String,
-        systemPrompt: String,
-        apiKey: String,
-        maxTokens: Int
-    ) async throws -> String {
-        var lastError: Error = DuolingoCourseError.invalidResponse
-
-        for _ in 0 ..< 2 {
-            do {
-                return try await service.fetchJSON(
-                    prompt: prompt,
-                    systemPrompt: systemPrompt,
-                    apiKey: apiKey,
-                    maxTokens: maxTokens
-                )
-            } catch {
-                lastError = error
-            }
-        }
-
-        throw lastError
     }
 
     enum DuolingoCourseError: LocalizedError {

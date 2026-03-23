@@ -16,7 +16,6 @@ final class SuggestedTopicsViewModel {
 
     private let service: any OpenRouterServing
     private let userDefaults: UserDefaults
-    private static let maxRetries = 2
     private static let cacheKey = "suggestedTopicsCache"
     private static let systemPrompt = """
     Return only a JSON array of 5 to 7 curious topic strings. No other text or explanation.
@@ -50,7 +49,7 @@ final class SuggestedTopicsViewModel {
     }
 
     private func fetchWithRetries(apiKey: String) async {
-        for attempt in 0 ..< Self.maxRetries {
+        for attempt in 0 ..< LLMRetry.maxAttempts {
             do {
                 let content = try await service.fetchJSON(
                     prompt: Self.userPrompt,
@@ -66,7 +65,7 @@ final class SuggestedTopicsViewModel {
                 throw SuggestedTopicsError.invalidFormat
             } catch {
                 retryCount = attempt + 1
-                if attempt < Self.maxRetries - 1 {
+                if attempt < LLMRetry.maxAttempts - 1 {
                     let delay = pow(2.0, Double(attempt))
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 } else {

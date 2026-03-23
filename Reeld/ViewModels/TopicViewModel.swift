@@ -71,10 +71,9 @@ final class TopicViewModel {
         isLoading = true
         defer { isLoading = false }
 
-        let maxAttempts = 2
         var lastError: Error?
 
-        for attempt in 0 ..< maxAttempts {
+        for attempt in 0 ..< LLMRetry.maxAttempts {
             reels = []
             error = nil
             streamBuffer = ""
@@ -96,14 +95,14 @@ final class TopicViewModel {
                     return
                 }
                 lastError = TopicGenerationError.emptyOrUnparseableResponse
-                if attempt < maxAttempts - 1 {
-                    try? await Task.sleep(nanoseconds: 750_000_000)
+                if attempt < LLMRetry.maxAttempts - 1 {
+                    await LLMRetry.delayBetweenAttempts()
                     continue
                 }
             } catch {
                 lastError = error
-                if attempt < maxAttempts - 1 {
-                    try? await Task.sleep(nanoseconds: 750_000_000)
+                if attempt < LLMRetry.maxAttempts - 1 {
+                    await LLMRetry.delayBetweenAttempts()
                 }
             }
         }
