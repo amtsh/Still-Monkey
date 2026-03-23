@@ -10,7 +10,9 @@ protocol OpenRouterServing {
     func stream(prompt: String, systemPrompt: String, apiKey: String) -> AsyncThrowingStream<String, Error>
 }
 
-struct OpenRouterService {
+struct OpenRouterService: Sendable {
+    nonisolated init() {}
+
     func fetchJSON(
         prompt: String,
         systemPrompt: String,

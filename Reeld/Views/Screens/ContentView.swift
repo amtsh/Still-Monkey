@@ -7,6 +7,8 @@ struct ContentView: View {
         case duolingoLesson(String)
     }
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var viewModel = TopicViewModel()
     @State private var courseViewModel = DuolingoCourseViewModel()
     @State private var path: [Route] = []
@@ -88,7 +90,7 @@ struct ContentView: View {
 
     private func showReelsIfNeeded() {
         guard path.last != .reels else { return }
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.82)) {
             path.append(.reels)
         }
     }
@@ -104,7 +106,7 @@ struct ContentView: View {
         }
 
         guard path.last != .duolingoCourse else { return }
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.82)) {
             path.append(.duolingoCourse)
         }
     }
@@ -118,7 +120,7 @@ struct ContentView: View {
 
         let route = Route.duolingoLesson(lessonID)
         guard path.last != route else { return }
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.42, dampingFraction: 0.82)) {
             path.append(route)
         }
     }

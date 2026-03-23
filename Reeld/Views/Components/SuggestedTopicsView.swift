@@ -31,6 +31,14 @@ struct SuggestedTopicsView: View {
                 .accessibilityLabel("Reload suggestions")
             }
 
+            if viewModel.showCachedTopicsNotice, !viewModel.isLoading {
+                Text("Showing saved topics. Connect to refresh when you’re online.")
+                    .font(.caption)
+                    .foregroundStyle(Config.Brand.readableTertiaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityLabel("Showing saved topics from last successful refresh.")
+            }
+
             contentView
         }
     }
@@ -78,7 +86,8 @@ struct SuggestedTopicsView: View {
     private func errorView(message: String) -> some View {
         HStack(spacing: 12) {
             Text(message)
-                .font(.system(size: 12, weight: .regular))
+                .font(.body)
+                .lineSpacing(ReadingTypography.bodyLineSpacing)
                 .foregroundStyle(.white.opacity(0.7))
 
             Button("Retry") {
@@ -88,6 +97,7 @@ struct SuggestedTopicsView: View {
             .foregroundStyle(.white.opacity(0.8))
             .buttonStyle(.plain)
         }
+        .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(cornerRadius: 14)

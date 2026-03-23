@@ -11,6 +11,7 @@ struct FloatingSearchBar: View {
                         let isSelected = viewModel.contentMode == mode
 
                         Button {
+                            HapticsFeedback.selectionChanged()
                             viewModel.contentMode = mode
                         } label: {
                             Text(mode.tabLabel)
@@ -29,6 +30,7 @@ struct FloatingSearchBar: View {
                                 .glassBackground(in: Capsule(), interactive: true)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("\(mode.tabLabel) mode\(isSelected ? ", selected" : "")")
                     }
                 }
                 .padding(.horizontal, 2)

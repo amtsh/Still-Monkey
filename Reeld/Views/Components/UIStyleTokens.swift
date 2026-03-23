@@ -28,6 +28,14 @@ enum HomeLayout {
     static let horizontalContentInset: CGFloat = 20
 }
 
+/// Long-form reading (matches reel body / quiz copy rhythm).
+enum ReadingTypography {
+    static let bodySize: CGFloat = 20
+    static let bodyLineSpacing: CGFloat = 10
+    static let footnoteTitleSize: CGFloat = 14
+    static let footnoteTopicSize: CGFloat = 13
+}
+
 enum UIIconSize {
     static let small: CGFloat = 11
     static let inline: CGFloat = 14

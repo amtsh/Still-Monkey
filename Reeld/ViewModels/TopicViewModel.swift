@@ -92,6 +92,7 @@ final class TopicViewModel {
                 flushBuffer()
                 if !reels.isEmpty {
                     saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
+                    HapticsFeedback.generationSucceeded()
                     return
                 }
                 lastError = TopicGenerationError.emptyOrUnparseableResponse
@@ -124,6 +125,39 @@ final class TopicViewModel {
     private static func userFacingStreamError(_ error: Error?) -> String {
         guard let error else {
             return "Something went wrong. Please try again."
+        }
+        if error is TopicGenerationError {
+            return "Could not read the model’s response after retrying. Try again or rephrase your topic."
+        }
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .cannotConnectToHost:
+                return "You appear to be offline. Check your connection and try again."
+            case .timedOut:
+                return "The request timed out. Try again in a moment."
+            case .cannotFindHost, .dnsLookupFailed:
+                return "Could not reach the server. Check your network."
+            default:
+                break
+            }
+        }
+        if let oe = error as? OpenRouterService.OpenRouterError {
+            switch oe {
+            case .invalidEndpoint:
+                return "App configuration error. Update Reeld or contact support."
+            case .invalidResponse:
+                return "The server returned an unexpected response. Try again."
+            case .streamFailed(let message):
+                return "OpenRouter: \(message)"
+            case .httpError(let code, _):
+                if code == 401 || code == 403 {
+                    return "Your API key was rejected. Check Settings → OpenRouter key."
+                }
+                if code == 429 {
+                    return "Rate limited. Wait a moment and try again."
+                }
+                return "Server returned error \(code). Try again."
+            }
         }
         if let localized = error as? LocalizedError, let description = localized.errorDescription, !description.isEmpty {
             return "Could not load content after retrying. \(description)"

@@ -50,7 +50,8 @@ struct SettingsHelpRow: View {
                 .foregroundStyle(isLink ? .blue : .white.opacity(0.35))
                 .frame(width: 20)
             Text(text)
-                .font(.subheadline)
+                .font(.body)
+                .lineSpacing(6)
                 .foregroundStyle(isLink ? .blue : .white.opacity(0.7))
             Spacer()
             if isLink {

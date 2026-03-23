@@ -368,7 +368,7 @@ struct ReeldTests {
     }
 }
 
-private struct StubOpenRouterService: OpenRouterServing {
+private struct StubOpenRouterService: OpenRouterServing, Sendable {
     func fetchJSON(
         prompt _: String,
         systemPrompt _: String,

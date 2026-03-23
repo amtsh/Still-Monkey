@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DuolingoLessonSessionView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: DuolingoLessonSessionViewModel
     @State private var currentPageID: DuolingoLessonSessionViewModel.PageID?
     @State private var hasAppliedInitialPosition = false
@@ -190,7 +191,7 @@ struct DuolingoLessonSessionView: View {
     }
 
     private func jumpToLessonStart(_ firstContentPageID: DuolingoLessonSessionViewModel.PageID) {
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.84)) {
+        withAnimation(reduceMotion ? .none : .spring(response: 0.38, dampingFraction: 0.84)) {
             currentPageID = firstContentPageID
         }
     }
@@ -215,9 +216,9 @@ private struct QuizQuestionCard: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Config.Brand.shortBreakColor)
                     Text(question.prompt)
-                        .font(.system(size: 20))
+                        .font(.system(size: ReadingTypography.bodySize))
                         .foregroundStyle(Color.white.opacity(0.88))
-                        .lineSpacing(10)
+                        .lineSpacing(ReadingTypography.bodyLineSpacing)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -242,9 +243,9 @@ private struct QuizQuestionCard: View {
                                 .padding(.top, 2)
 
                                 Text(choice)
-                                    .font(.system(size: 20))
+                                    .font(.system(size: ReadingTypography.bodySize))
                                     .foregroundStyle(choiceForeground(for: index))
-                                    .lineSpacing(10)
+                                    .lineSpacing(ReadingTypography.bodyLineSpacing)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -262,6 +263,10 @@ private struct QuizQuestionCard: View {
                             )
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            "Option \(index + 1) of \(question.choices.count): \(choice)"
+                                + (selectedAnswerIndex == index ? ", selected" : "")
+                        )
                     }
                 }
 
@@ -275,17 +280,18 @@ private struct QuizQuestionCard: View {
                         .foregroundStyle(Config.Brand.readableSecondaryText)
                         .lineSpacing(5)
                         .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
 
                 VStack(alignment: .leading, spacing: 6) {
                     Text(lessonTitle)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: ReadingTypography.footnoteTitleSize, weight: .medium))
                         .foregroundStyle(.white.opacity(0.85))
                         .lineLimit(1)
                     Text(topicTitle)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: ReadingTypography.footnoteTopicSize, weight: .medium))
                         .foregroundStyle(Config.Brand.readableTertiaryText)
                         .lineLimit(1)
                 }
@@ -381,6 +387,8 @@ private struct LessonResultCard: View {
     let onRetry: () -> Void
     let onBackToPath: () -> Void
 
+    @State private var didEmitResultHaptic = false
+
     var body: some View {
         ZStack {
             ReeldScreenBackground.standard
@@ -389,16 +397,18 @@ private struct LessonResultCard: View {
                 Image(systemName: iconName)
                     .font(.system(size: 58, weight: .bold))
                     .foregroundStyle(iconColor)
+                    .accessibilityHidden(true)
 
                 Text(title)
                     .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(.white)
 
                 Text(message)
-                    .font(.headline)
+                    .font(.system(size: ReadingTypography.bodySize))
                     .foregroundStyle(Config.Brand.readableSecondaryText)
+                    .lineSpacing(ReadingTypography.bodyLineSpacing)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal, 24)
 
                 VStack(spacing: 12) {
                     if didPassQuiz {
@@ -427,6 +437,15 @@ private struct LessonResultCard: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .onAppear {
+            guard !didEmitResultHaptic else { return }
+            didEmitResultHaptic = true
+            if didPassQuiz {
+                HapticsFeedback.lessonSuccess()
+            } else if hasQuizAttempt {
+                HapticsFeedback.lessonNeedsRetry()
+            }
         }
     }
 

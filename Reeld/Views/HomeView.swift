@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: TopicViewModel
     @Bindable var courseViewModel: DuolingoCourseViewModel
 
@@ -136,15 +137,19 @@ struct HomeView: View {
                 .accessibilityLabel("Settings")
             }
         }
-        .alert("Delete this item?", isPresented: $isShowingDeleteConfirmation) {
-            Button("Delete", role: .destructive) {
+        .alert("Remove from recent?", isPresented: $isShowingDeleteConfirmation) {
+            Button("Remove", role: .destructive) {
                 confirmDeleteRecent()
             }
             Button("Cancel", role: .cancel) {
                 pendingDeleteItem = nil
             }
         } message: {
-            Text("This action cannot be undone.")
+            if let item = pendingDeleteItem {
+                Text("“\(item.displayTopic)” will be removed from this device. You can’t undo this.")
+            } else {
+                Text("This action cannot be undone.")
+            }
         }
         .preferredColorScheme(.dark)
     }
@@ -218,7 +223,7 @@ struct HomeView: View {
                     Spacer()
 
                     Button(isEditingHistory ? "Done" : "Edit") {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.2)) {
                             isEditingHistory.toggle()
                         }
                     }

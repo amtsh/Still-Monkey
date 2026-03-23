@@ -12,6 +12,8 @@ final class SuggestedTopicsViewModel {
     var topics: [String] = []
     var isLoading = false
     var error: String?
+    /// True when topics are shown from cache after a failed refresh (user is offline or API failed).
+    var showCachedTopicsNotice = false
     private var retryCount = 0
 
     private let service: any OpenRouterServing
@@ -39,19 +41,20 @@ final class SuggestedTopicsViewModel {
             return
         }
 
-        topics = []
+        let previousTopics = topics
         error = nil
+        showCachedTopicsNotice = false
         isLoading = true
         retryCount = 0
 
-        await fetchWithRetries(apiKey: apiKey)
+        await fetchWithRetries(apiKey: apiKey, previousTopics: previousTopics)
         isLoading = false
     }
 
-    private func fetchWithRetries(apiKey: String) async {
+    private func fetchWithRetries(apiKey: String, previousTopics: [String]) async {
         for attempt in 0 ..< LLMRetry.maxAttempts {
             do {
-                let content = try await service.fetchJSON(
+                let content = try await service.fetchJSONWithRetry(
                     prompt: Self.userPrompt,
                     systemPrompt: Self.systemPrompt,
                     apiKey: apiKey,
@@ -60,6 +63,7 @@ final class SuggestedTopicsViewModel {
                 if let parsed = parseTopics(from: content) {
                     topics = parsed
                     saveCachedTopics(parsed)
+                    showCachedTopicsNotice = false
                     return
                 }
                 throw SuggestedTopicsError.invalidFormat
@@ -69,7 +73,20 @@ final class SuggestedTopicsViewModel {
                     let delay = pow(2.0, Double(attempt))
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 } else {
-                    self.error = "Could not load suggestions. Try again."
+                    let cached = loadCachedTopics()
+                    if !cached.isEmpty {
+                        topics = cached
+                        showCachedTopicsNotice = true
+                        self.error = nil
+                    } else if !previousTopics.isEmpty {
+                        topics = previousTopics
+                        showCachedTopicsNotice = true
+                        self.error = nil
+                    } else {
+                        topics = []
+                        showCachedTopicsNotice = false
+                        self.error = "Could not load suggestions. Try again."
+                    }
                 }
             }
         }

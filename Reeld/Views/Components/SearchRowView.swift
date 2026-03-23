@@ -73,7 +73,7 @@ struct SearchRowView: View {
                 .frame(width: 16)
 
             Text(title)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 14))
                 .foregroundStyle(.white.opacity(0.95))
                 .lineLimit(1)
 

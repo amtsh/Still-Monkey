@@ -9,10 +9,12 @@ import SwiftUI
 
 struct ReelsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let viewModel: TopicViewModel
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
     @State private var isRestoringPosition = true
+    @State private var isZenMode = false
 
     private var topicTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
@@ -40,21 +42,41 @@ struct ReelsView: View {
             if viewModel.isLoading && !viewModel.reels.isEmpty {
                 loadingStrip
             }
+
+            if !viewModel.reels.isEmpty {
+                aiAttribution
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 12)
+                    .allowsHitTesting(false)
+            }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
+        .animation(reduceMotion ? .default : .spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isZenMode ? .hidden : .automatic, for: .navigationBar)
+        .onDisappear {
+            isZenMode = false
+        }
         .onAppear {
             isRestoringPosition = true
             applyInitialPositionIfNeeded()
             revealProgressBarAfterRestore()
         }
-        .onChange(of: currentID) { oldValue, newValue in
+        .onChange(of: currentID) { _, newValue in
             viewModel.recordCurrentReelID(newValue)
             if isRestoringPosition, newValue != nil {
                 isRestoringPosition = false
             }
         }
+    }
+
+    private var aiAttribution: some View {
+        Text("Generated for learning — verify important facts.")
+            .font(.caption2)
+            .foregroundStyle(Config.Brand.readableTertiaryText)
+            .multilineTextAlignment(.center)
+            .accessibilityLabel("AI-generated content. Verify important facts.")
     }
 
     // MARK: – Feed
@@ -71,12 +93,20 @@ struct ReelsView: View {
                             totalCount: viewModel.reels.count,
                             chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
                             topicTitle: topicTitle,
-                            showsProgressBar: !isRestoringPosition
+                            showsProgressBar: !isRestoringPosition,
+                            zenModeDimProgress: isZenMode
                         )
 
                         if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
                             SwipeHintOverlay()
                                 .onAppear { hasShownSwipeHint = true }
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        HapticsFeedback.impactSoft()
+                        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) {
+                            isZenMode.toggle()
                         }
                     }
                     .containerRelativeFrame([.horizontal, .vertical])
@@ -100,7 +130,6 @@ struct ReelsView: View {
 
         let savedID = viewModel.consumePendingStartReelID()
         if let savedID, viewModel.reels.contains(where: { $0.id == savedID }) {
-            // Snap to the saved reel without transition animation.
             var transaction = Transaction()
             transaction.animation = nil
             withTransaction(transaction) {
@@ -142,6 +171,7 @@ struct ReelsView: View {
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+        .accessibilityLabel("Still generating content")
     }
 
     // MARK: – Empty / loading state
@@ -152,6 +182,7 @@ struct ReelsView: View {
                 ProgressView()
                     .tint(.white)
                     .scaleEffect(1.4)
+                    .accessibilityLabel("Loading")
                 Text(viewModel.contentMode.loadingMessage)
                     .font(.headline)
                     .foregroundStyle(Config.Brand.readableSecondaryText)
@@ -159,11 +190,13 @@ struct ReelsView: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(.orange.opacity(0.7))
+                    .accessibilityHidden(true)
                 Text(error)
-                    .font(.subheadline)
+                    .font(.body)
                     .foregroundStyle(Config.Brand.readableSecondaryText)
+                    .lineSpacing(ReadingTypography.bodyLineSpacing)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, 24)
                 primaryButton(title: "Retry", disabled: viewModel.isLoading) {
                     Task { await viewModel.generateContent() }
                 }
@@ -172,6 +205,7 @@ struct ReelsView: View {
                 Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
                     .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(.white.opacity(0.15))
+                    .accessibilityHidden(true)
                 Text(viewModel.contentMode.emptyStateMessage)
                     .font(.headline)
                     .foregroundStyle(.white.opacity(0.35))
@@ -220,4 +254,3 @@ struct ReelsView: View {
         dismiss()
     }
 }
-
