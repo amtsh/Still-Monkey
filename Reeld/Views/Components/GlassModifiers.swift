@@ -10,7 +10,7 @@ struct GlassBackgroundModifier<S: Shape>: ViewModifier {
                 .glassEffect(interactive ? .regular.interactive() : .regular, in: shape)
         } else {
             content
-                .background(.white.opacity(0.1), in: shape)
+                .background(Config.Brand.backgroundSheet.opacity(0.55), in: shape)
         }
     }
 }
@@ -19,12 +19,12 @@ struct SubmitButtonBackgroundModifier: ViewModifier {
     let enabled: Bool
 
     func body(content: Content) -> some View {
-        content
-            .background(
-                Circle().fill(enabled ? Color.white.opacity(0.92) : Color.white.opacity(0.4))
+            content
+                .background(
+                Circle().fill(enabled ? Config.Brand.startButtonFill : Config.Brand.backgroundSheet.opacity(0.5))
             )
             .overlay(
-                Circle().stroke(.white.opacity(enabled ? 0.35 : 0.2), lineWidth: 1)
+                Circle().stroke(Config.Brand.startButtonTextColor.opacity(enabled ? 0.35 : 0.2), lineWidth: 1)
             )
     }
 }
@@ -39,10 +39,10 @@ struct SettingsSectionGlassModifier: ViewModifier {
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
         } else {
             content
-                .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(Config.Brand.backgroundSheet.opacity(0.45), in: RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(isConfigured ? Color.green.opacity(0.2) : Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(isConfigured ? Config.Brand.shortBreakColor.opacity(0.22) : Color.white.opacity(0.08), lineWidth: 1)
                 )
         }
     }
@@ -58,7 +58,7 @@ struct GlassCardModifier: ViewModifier {
                 .glassEffect(.regular, in: RoundedRectangle(cornerRadius: cornerRadius))
         } else {
             content
-                .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: cornerRadius))
+                .background(Config.Brand.backgroundSheet.opacity(0.4), in: RoundedRectangle(cornerRadius: cornerRadius))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius)
                         .stroke(.white.opacity(showBorder ? 0.08 : 0), lineWidth: 1)

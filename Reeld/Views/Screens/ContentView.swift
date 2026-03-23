@@ -83,6 +83,7 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .tint(Config.accentColor)
     }
 
     private func showReelsIfNeeded() {

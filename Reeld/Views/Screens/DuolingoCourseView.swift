@@ -8,19 +8,12 @@ struct DuolingoCourseView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            ReeldScreenBackground.standard
+                .ignoresSafeArea()
 
-            LinearGradient(
-                colors: [
-                    Color(red: 0.22, green: 0.58, blue: 0.35).opacity(0.34),
-                    Color(red: 0.87, green: 0.78, blue: 0.28).opacity(0.16),
-                    .clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+            ReeldScreenBackground.accentWash()
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
@@ -80,10 +73,11 @@ struct DuolingoCourseView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Duolingo Mode")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Color(red: 0.85, green: 0.94, blue: 0.68))
+                .foregroundStyle(Config.Brand.focusColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(Color.white.opacity(0.08), in: Capsule())
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
 
             Text(viewModel.course?.courseTitle ?? "Build a new lesson path")
                 .font(.system(size: 28, weight: .bold))
@@ -91,7 +85,7 @@ struct DuolingoCourseView: View {
 
             Text(courseSubtitle)
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.68))
+                .foregroundStyle(Config.Brand.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
@@ -186,7 +180,7 @@ struct DuolingoCourseView: View {
                 .scaleEffect(1.2)
             Text("Building your path...")
                 .font(.headline)
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(Config.Brand.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, minHeight: 280)
         .glassCard(cornerRadius: 24)
@@ -196,7 +190,7 @@ struct DuolingoCourseView: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: UIIconSize.hero))
-                .foregroundStyle(.orange.opacity(0.8))
+                .foregroundStyle(Config.Brand.focusColor.opacity(0.9))
 
             Text(message)
                 .font(.headline)
@@ -206,8 +200,8 @@ struct DuolingoCourseView: View {
                 Task { await viewModel.startCourse(for: viewModel.topic, forceRefresh: true) }
             }
             .buttonStyle(.borderedProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .tint(Config.Brand.startButtonFill)
+            .foregroundStyle(Config.Brand.startButtonTextColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
@@ -221,7 +215,7 @@ struct DuolingoCourseView: View {
                 .foregroundStyle(.white)
             Text("Search a topic from the home screen in Duolingo mode to create a vertical lesson map.")
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.64))
+                .foregroundStyle(Config.Brand.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
@@ -278,11 +272,11 @@ struct DuolingoCourseView: View {
         case .locked:
             return Color.white.opacity(0.08)
         case .completed:
-            return Color(red: 0.25, green: 0.72, blue: 0.41)
+            return Config.Brand.shortBreakColor.opacity(0.85)
         case .current:
-            return Color(red: 0.96, green: 0.68, blue: 0.26)
+            return Config.Brand.focusColor
         case .unlocked:
-            return Color(red: 0.27, green: 0.58, blue: 0.97)
+            return Config.Brand.accentColor(at: 4)
         }
     }
 
@@ -304,11 +298,11 @@ struct DuolingoCourseView: View {
         case .locked:
             return .clear
         case .completed:
-            return Color.green.opacity(0.26)
+            return Config.Brand.shortBreakColor.opacity(0.26)
         case .current:
-            return Color.orange.opacity(0.28)
+            return Config.Brand.focusColor.opacity(0.35)
         case .unlocked:
-            return Color.blue.opacity(0.24)
+            return Config.Brand.accentColor(at: 4).opacity(0.28)
         }
     }
 
@@ -336,11 +330,11 @@ struct DuolingoCourseView: View {
         case .locked:
             return .white.opacity(0.45)
         case .completed:
-            return .green
+            return Config.Brand.shortBreakColor
         case .current:
-            return .orange
+            return Config.Brand.focusColor
         case .unlocked:
-            return .blue
+            return Config.Brand.accentColor(at: 4)
         }
     }
 }

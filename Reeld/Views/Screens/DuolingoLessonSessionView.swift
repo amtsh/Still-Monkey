@@ -18,16 +18,12 @@ struct DuolingoLessonSessionView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            ReeldScreenBackground.standard
+                .ignoresSafeArea()
 
-            LinearGradient(
-                colors: [
-                    Color(red: 0.14, green: 0.19, blue: 0.39).opacity(0.36),
-                    Color(red: 0.12, green: 0.46, blue: 0.34).opacity(0.24),
-                    .clear
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
+            ReeldScreenBackground.accentWash(
+                topLeading: Config.Brand.accentColor(at: 5).opacity(0.12),
+                topTrailing: Config.Brand.actionTint.opacity(0.18)
             )
             .ignoresSafeArea()
             .allowsHitTesting(false)
@@ -147,7 +143,7 @@ struct DuolingoLessonSessionView: View {
                 .scaleEffect(1.2)
             Text("Loading lesson...")
                 .font(.headline)
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(Config.Brand.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -156,7 +152,7 @@ struct DuolingoLessonSessionView: View {
         VStack(spacing: 18) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: UIIconSize.hero))
-                .foregroundStyle(.orange.opacity(0.82))
+                .foregroundStyle(Config.Brand.focusColor.opacity(0.9))
             Text(message)
                 .font(.headline)
                 .foregroundStyle(.white)
@@ -166,8 +162,8 @@ struct DuolingoLessonSessionView: View {
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
-            .tint(.white)
-            .foregroundStyle(.black)
+            .tint(Config.Brand.startButtonFill)
+            .foregroundStyle(Config.Brand.startButtonTextColor)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -211,13 +207,13 @@ private struct QuizQuestionCard: View {
 
     var body: some View {
         ZStack {
-            Color.black
+            ReeldScreenBackground.standard
 
             VStack(alignment: .leading, spacing: 22) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Quiz")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(Color(red: 0.50, green: 0.86, blue: 0.52))
+                        .foregroundStyle(Config.Brand.shortBreakColor)
                     Text(question.prompt)
                         .font(.system(size: 28, weight: .bold))
                         .foregroundStyle(.white)
@@ -271,7 +267,7 @@ private struct QuizQuestionCard: View {
 
                     Text(question.explanation)
                         .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.68))
+                        .foregroundStyle(Config.Brand.readableSecondaryText)
                         .lineSpacing(5)
                 }
 
@@ -280,10 +276,10 @@ private struct QuizQuestionCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(lessonTitle)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(0.92))
                     Text(topicTitle)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(Config.Brand.readableTertiaryText)
                 }
             }
             .padding(.horizontal, 24)
@@ -310,10 +306,10 @@ private struct QuizQuestionCard: View {
     private func choiceBackground(for index: Int) -> Color {
         if revealAnswers {
             if isCorrectChoice(index) {
-                return Color.green.opacity(0.18)
+                return Config.Brand.shortBreakColor.opacity(0.18)
             }
             if selectedAnswerIndex == index {
-                return Color.red.opacity(0.16)
+                return Config.Brand.destructiveTint.opacity(0.45)
             }
         }
 
@@ -327,10 +323,10 @@ private struct QuizQuestionCard: View {
     private func choiceBorder(for index: Int) -> Color {
         if revealAnswers {
             if isCorrectChoice(index) {
-                return Color.green.opacity(0.72)
+                return Config.Brand.shortBreakColor.opacity(0.72)
             }
             if selectedAnswerIndex == index {
-                return Color.red.opacity(0.6)
+                return Color.red.opacity(0.55)
             }
         }
 
@@ -344,10 +340,10 @@ private struct QuizQuestionCard: View {
     private func choiceForeground(for index: Int) -> Color {
         if revealAnswers {
             if isCorrectChoice(index) {
-                return .green
+                return Config.Brand.shortBreakColor
             }
             if selectedAnswerIndex == index {
-                return Color(red: 1.0, green: 0.56, blue: 0.56)
+                return Color.red.opacity(0.82)
             }
         }
 
@@ -363,7 +359,7 @@ private struct QuizQuestionCard: View {
     }
 
     private func feedbackColor(for selectedAnswerIndex: Int) -> Color {
-        isCorrectChoice(selectedAnswerIndex) ? .green : Color(red: 1.0, green: 0.56, blue: 0.56)
+        isCorrectChoice(selectedAnswerIndex) ? Config.Brand.shortBreakColor : Color.red.opacity(0.85)
     }
 }
 
@@ -379,7 +375,7 @@ private struct LessonResultCard: View {
 
     var body: some View {
         ZStack {
-            Color.black
+            ReeldScreenBackground.standard
 
             VStack(spacing: 20) {
                 Image(systemName: iconName)
@@ -392,7 +388,7 @@ private struct LessonResultCard: View {
 
                 Text(message)
                     .font(.headline)
-                    .foregroundStyle(.white.opacity(0.68))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
 
@@ -402,22 +398,22 @@ private struct LessonResultCard: View {
                             onBackToPath()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.white)
-                        .foregroundStyle(.black)
+                        .tint(Config.Brand.startButtonFill)
+                        .foregroundStyle(Config.Brand.startButtonTextColor)
                     } else if hasQuizAttempt {
                         Button("Try again") {
                             onRetry()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.white)
-                        .foregroundStyle(.black)
+                        .tint(Config.Brand.startButtonFill)
+                        .foregroundStyle(Config.Brand.startButtonTextColor)
                     } else if !hasQuizAttempt {
                         Button("Check answers") {
                             onSubmit()
                         }
                         .buttonStyle(.borderedProminent)
-                        .tint(.white)
-                        .foregroundStyle(.black)
+                        .tint(Config.Brand.startButtonFill)
+                        .foregroundStyle(Config.Brand.startButtonTextColor)
                         .disabled(!canSubmitQuiz)
                     }
                 }
@@ -438,12 +434,12 @@ private struct LessonResultCard: View {
 
     private var iconColor: Color {
         if didPassQuiz {
-            return .green
+            return Config.Brand.shortBreakColor
         }
         if hasQuizAttempt {
-            return Color(red: 1.0, green: 0.56, blue: 0.56)
+            return Color.red.opacity(0.78)
         }
-        return .white.opacity(0.65)
+        return Config.Brand.focusColor.opacity(0.85)
     }
 
     private var title: String {

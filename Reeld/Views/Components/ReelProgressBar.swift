@@ -19,8 +19,8 @@ struct ReelProgressBar: View {
     }
 
     private func segmentColor(at index: Int) -> Color {
-        if index < currentIndex { return .white.opacity(0.7) }
-        if index == currentIndex { return .white }
-        return .white.opacity(0.22)
+        if index < currentIndex { return Color.white.opacity(0.42) }
+        if index == currentIndex { return Config.Brand.focusColor }
+        return Color.white.opacity(0.18)
     }
 }

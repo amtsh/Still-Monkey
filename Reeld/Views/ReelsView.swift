@@ -26,7 +26,8 @@ struct ReelsView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            ReeldScreenBackground.standard
+                .ignoresSafeArea()
 
             if viewModel.reels.isEmpty {
                 emptyState
@@ -153,14 +154,14 @@ struct ReelsView: View {
                     .scaleEffect(1.4)
                 Text(viewModel.contentMode.loadingMessage)
                     .font(.headline)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
             } else if let error = viewModel.error {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(.orange.opacity(0.7))
                 Text(error)
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                 primaryButton(title: "Retry", disabled: viewModel.isLoading) {
@@ -196,8 +197,8 @@ struct ReelsView: View {
         } else {
             Button(title, action: action)
                 .buttonStyle(.borderedProminent)
-                .tint(.white)
-                .foregroundStyle(.black)
+                .tint(Config.Brand.startButtonFill)
+                .foregroundStyle(Config.Brand.startButtonTextColor)
                 .disabled(disabled)
         }
     }

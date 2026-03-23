@@ -12,7 +12,8 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            ReeldScreenBackground.standard
+                .ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
@@ -69,7 +70,7 @@ struct SettingsView: View {
 
             Text("Stored locally on this device.")
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.45))
+                .foregroundStyle(Config.Brand.readableTertiaryText)
         }
         .padding(16)
         .glassCard(cornerRadius: 14)

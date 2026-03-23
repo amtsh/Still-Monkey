@@ -17,34 +17,34 @@ struct HomeView: View {
 
         var id: String {
             switch self {
-            case .reel(let snapshot):
+            case let .reel(snapshot):
                 return snapshot.id
-            case .duolingo(let snapshot):
+            case let .duolingo(snapshot):
                 return snapshot.id
             }
         }
 
         var updatedAt: Date {
             switch self {
-            case .reel(let snapshot):
+            case let .reel(snapshot):
                 return snapshot.updatedAt
-            case .duolingo(let snapshot):
+            case let .duolingo(snapshot):
                 return snapshot.updatedAt
             }
         }
 
         var displayTopic: String {
             switch self {
-            case .reel(let snapshot):
+            case let .reel(snapshot):
                 return snapshot.displayTopic
-            case .duolingo(let snapshot):
+            case let .duolingo(snapshot):
                 return snapshot.displayTopic
             }
         }
 
         var iconName: String {
             switch self {
-            case .reel(let snapshot):
+            case let .reel(snapshot):
                 return snapshot.mode == .story ? "moon.zzz" : "book"
             case .duolingo:
                 return "point.3.connected.trianglepath.dotted"
@@ -90,20 +90,8 @@ struct HomeView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-
-            LinearGradient(
-                colors: [
-                    Color(red: 1.00, green: 0.75, blue: 0.80).opacity(0.24),
-                    .clear,
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(maxHeight: 260)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+            ReeldScreenBackground.standard
+                .ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
@@ -142,6 +130,7 @@ struct HomeView: View {
                 } label: {
                     Image(systemName: "gear")
                         .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.85))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Settings")
@@ -176,8 +165,8 @@ struct HomeView: View {
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [
-                                    Color(red: 1.00, green: 0.85, blue: 0.70),
-                                    Color(red: 1.00, green: 0.75, blue: 0.50),
+                                    Config.Brand.focusColor,
+                                    Config.Brand.longBreakColor,
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -186,7 +175,7 @@ struct HomeView: View {
 
                     Text("Learn something real.")
                         .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(.white.opacity(0.78))
+                        .foregroundStyle(Config.Brand.readableSecondaryText)
                         .lineSpacing(2)
                 }
                 .frame(width: leftWidth, alignment: .leading)
@@ -195,7 +184,7 @@ struct HomeView: View {
                     .frame(width: rightWidth, height: proxy.size.height - 40)
                     .opacity(0.95)
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, HomeLayout.horizontalContentInset)
             .padding(.top, 24)
             .padding(.bottom, 24)
         }
@@ -224,7 +213,7 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     Text(title)
                         .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.55))
+                        .foregroundStyle(Config.Brand.readableTertiaryText)
 
                     Spacer()
 
@@ -234,10 +223,9 @@ struct HomeView: View {
                         }
                     }
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(Config.Brand.readableTertiaryText)
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
 
                 VStack(spacing: 0) {
                     ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
@@ -246,7 +234,7 @@ struct HomeView: View {
                         if index < items.count - 1 {
                             Divider()
                                 .background(.white.opacity(0.12))
-                                .padding(.leading, 42)
+                                .padding(.leading, 30)
                         }
                     }
                 }
@@ -283,12 +271,12 @@ struct HomeView: View {
         HapticsFeedback.impactSoft()
 
         switch item {
-        case .reel(let snapshot):
+        case let .reel(snapshot):
             viewModel.contentMode = snapshot.mode
             viewModel.loadRecentSnapshot(snapshot)
             searchText = snapshot.topic
             onOpenFeed?()
-        case .duolingo(let snapshot):
+        case let .duolingo(snapshot):
             viewModel.contentMode = .duolingo
             viewModel.topic = snapshot.topic
             searchText = snapshot.topic
@@ -306,9 +294,9 @@ struct HomeView: View {
         guard let item = pendingDeleteItem else { return }
 
         switch item {
-        case .reel(let snapshot):
+        case let .reel(snapshot):
             viewModel.deleteRecentSnapshot(snapshot)
-        case .duolingo(let snapshot):
+        case let .duolingo(snapshot):
             courseViewModel.deleteRecentCourse(snapshot)
         }
 
@@ -324,9 +312,9 @@ struct HomeView: View {
 
     private func isLastSeen(_ item: HomeRecentItem) -> Bool {
         switch item {
-        case .reel(let snapshot):
+        case let .reel(snapshot):
             return snapshot.id == viewModel.lastAccessedRecentID
-        case .duolingo(let snapshot):
+        case let .duolingo(snapshot):
             return snapshot.id == courseViewModel.lastAccessedCourseID
         }
     }

@@ -1,9 +1,8 @@
 import SwiftUI
 
-private let chapterColors: [Color] = [.blue, .purple, .pink, .orange]
-
 private func chapterAccent(for chapterIndex: Int) -> Color {
-    chapterColors[max(0, chapterIndex - 1) % chapterColors.count]
+        let palette = stride(from: 1, through: 9, by: 2).map { Config.Brand.accentColor(at: $0) }
+        return palette[max(0, chapterIndex - 1) % palette.count]
 }
 
 struct ReelCardView: View {
@@ -72,7 +71,7 @@ private struct ChapterTitleCard: View {
 
     var body: some View {
         ZStack {
-            Color.black
+            ReeldScreenBackground.standard
 
             VStack(spacing: 18) {
                 Text("Chapter \(index)")
@@ -94,7 +93,7 @@ private struct ChapterTitleCard: View {
 
                 Text(topicTitle)
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.62))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
                     .lineLimit(1)
                     .padding(.horizontal, 32)
             }
@@ -133,14 +132,14 @@ private struct ContentCard: View {
 
     var body: some View {
         ZStack {
-            Color.black
+            ReeldScreenBackground.standard
 
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 28) {
                     ForEach(Array(sentenceParagraphs.enumerated()), id: \.offset) { _, sentence in
                         Text(sentence)
                             .font(.system(size: 20))
-                            .foregroundStyle(.white.opacity(0.85))
+                            .foregroundStyle(Color.white.opacity(0.88))
                             .lineSpacing(10)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -163,7 +162,7 @@ private struct ContentCard: View {
                         .lineLimit(1)
                     Text(topicTitle)
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.48))
+                        .foregroundStyle(Config.Brand.readableTertiaryText)
                         .lineLimit(1)
                 }
                 .padding(.horizontal, 24)

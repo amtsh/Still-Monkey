@@ -14,7 +14,7 @@ struct SuggestedTopicsView: View {
             HStack(spacing: 12) {
                 Text("Suggested")
                     .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white.opacity(0.55))
+                    .foregroundStyle(Config.Brand.readableTertiaryText)
 
                 Spacer()
 
@@ -24,13 +24,12 @@ struct SuggestedTopicsView: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.5))
+                        .foregroundStyle(Config.Brand.readableTertiaryText)
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isLoading)
                 .accessibilityLabel("Reload suggestions")
             }
-            .padding(.horizontal, 16)
 
             contentView
         }
@@ -49,7 +48,7 @@ struct SuggestedTopicsView: View {
 
     private var loadingView: some View {
         VStack(spacing: 0) {
-            ForEach(0..<5, id: \.self) { index in
+            ForEach(0 ..< 5, id: \.self) { index in
                 HStack(spacing: 14) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.white.opacity(0.12))
@@ -64,14 +63,13 @@ struct SuggestedTopicsView: View {
                         .fill(.white.opacity(0.12))
                         .frame(width: 14, height: 12)
                 }
-                .padding(.horizontal, 16)
                 .padding(.vertical, 8)
                 .frame(minHeight: 40)
 
                 if index < 4 {
                     Divider()
                         .background(.white.opacity(0.12))
-                        .padding(.leading, 42)
+                        .padding(.leading, 30)
                 }
             }
         }
@@ -90,7 +88,6 @@ struct SuggestedTopicsView: View {
             .foregroundStyle(.white.opacity(0.8))
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .glassCard(cornerRadius: 14)
@@ -104,7 +101,7 @@ struct SuggestedTopicsView: View {
                 if index < viewModel.topics.count - 1 {
                     Divider()
                         .background(.white.opacity(0.12))
-                        .padding(.leading, 42)
+                        .padding(.leading, 30)
                 }
             }
         }

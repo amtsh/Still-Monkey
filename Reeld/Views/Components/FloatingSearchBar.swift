@@ -15,16 +15,16 @@ struct FloatingSearchBar: View {
                         } label: {
                             Text(mode.tabLabel)
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.9))
+                                .foregroundStyle(isSelected ? Color.white : Config.Brand.readableSecondaryText)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(
                                     Capsule()
-                                        .fill(isSelected ? accentColor(for: mode).opacity(0.24) : Color.clear)
+                                        .fill(isSelected ? accentColor(for: mode).opacity(0.22) : Color.clear)
                                 )
                                 .overlay(
                                     Capsule()
-                                        .stroke(isSelected ? accentColor(for: mode).opacity(0.62) : .white.opacity(0.28), lineWidth: 1)
+                                        .stroke(isSelected ? accentColor(for: mode).opacity(0.55) : Color.white.opacity(0.12), lineWidth: 1)
                                 )
                                 .glassBackground(in: Capsule(), interactive: true)
                         }
@@ -56,11 +56,11 @@ struct FloatingSearchBar: View {
     private func accentColor(for mode: ContentMode) -> Color {
         switch mode {
         case .learn:
-            return .orange
+            return Config.Brand.focusColor
         case .story:
-            return .pink
+            return Config.Brand.accentColor(at: 7)
         case .duolingo:
-            return Color(red: 0.42, green: 0.82, blue: 0.42)
+            return Config.Brand.shortBreakColor
         }
     }
 }
