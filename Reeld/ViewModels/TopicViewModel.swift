@@ -68,31 +68,68 @@ final class TopicViewModel {
             return
         }
 
-        reels = []
-        error = nil
         isLoading = true
-        streamBuffer = ""
-        parser.reset()
+        defer { isLoading = false }
 
-        do {
-            let stream = service.stream(
-                prompt: prompt.userPrompt,
-                systemPrompt: prompt.systemPrompt,
-                apiKey: apiKey
-            )
-            for try await token in stream {
-                streamBuffer += token
-                processBuffer()
+        let maxAttempts = 2
+        var lastError: Error?
+
+        for attempt in 0 ..< maxAttempts {
+            reels = []
+            error = nil
+            streamBuffer = ""
+            parser.reset()
+
+            do {
+                let stream = service.stream(
+                    prompt: prompt.userPrompt,
+                    systemPrompt: prompt.systemPrompt,
+                    apiKey: apiKey
+                )
+                for try await token in stream {
+                    streamBuffer += token
+                    processBuffer()
+                }
+                flushBuffer()
+                if !reels.isEmpty {
+                    saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
+                    return
+                }
+                lastError = TopicGenerationError.emptyOrUnparseableResponse
+                if attempt < maxAttempts - 1 {
+                    try? await Task.sleep(nanoseconds: 750_000_000)
+                    continue
+                }
+            } catch {
+                lastError = error
+                if attempt < maxAttempts - 1 {
+                    try? await Task.sleep(nanoseconds: 750_000_000)
+                }
             }
-            flushBuffer()
-            if !reels.isEmpty {
-                saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
-            }
-        } catch {
-            self.error = "Something went wrong. Please check your connection and try again."
         }
 
-        isLoading = false
+        error = Self.userFacingStreamError(lastError)
+    }
+
+    private enum TopicGenerationError: LocalizedError {
+        case emptyOrUnparseableResponse
+
+        var errorDescription: String? {
+            switch self {
+            case .emptyOrUnparseableResponse:
+                return "The model returned no usable cards."
+            }
+        }
+    }
+
+    private static func userFacingStreamError(_ error: Error?) -> String {
+        guard let error else {
+            return "Something went wrong. Please try again."
+        }
+        if let localized = error as? LocalizedError, let description = localized.errorDescription, !description.isEmpty {
+            return "Could not load content after retrying. \(description)"
+        }
+        return "Could not load content after retrying. Please check your connection and try again."
     }
 
     private func processBuffer() {

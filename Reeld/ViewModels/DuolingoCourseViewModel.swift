@@ -59,7 +59,7 @@ final class DuolingoCourseViewModel {
                 prompt: prompt.userPrompt,
                 systemPrompt: prompt.systemPrompt,
                 apiKey: apiKey,
-                maxTokens: 1400
+                maxTokens: 2000
             )
             let snapshot = try DuolingoPayloadParser.parseCourseSnapshot(from: content, topic: trimmedTopic)
             loadCourse(snapshot)
@@ -152,7 +152,7 @@ final class DuolingoCourseViewModel {
             prompt: prompt.userPrompt,
             systemPrompt: prompt.systemPrompt,
             apiKey: apiKey,
-            maxTokens: 2200
+            maxTokens: 3200
         )
         let progress = try DuolingoPayloadParser.parseLessonProgress(from: content, lesson: lesson)
 

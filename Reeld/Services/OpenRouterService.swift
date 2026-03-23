@@ -105,8 +105,8 @@ struct OpenRouterService {
                 ["role": "system", "content": systemPrompt],
                 ["role": "user", "content": prompt]
             ],
-            "temperature": 0.6,
-            "max_tokens": 1500,
+            "temperature": 0.55,
+            "max_tokens": 8192,
             "stream": true
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)

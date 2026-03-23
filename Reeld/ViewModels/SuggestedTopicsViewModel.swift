@@ -16,7 +16,7 @@ final class SuggestedTopicsViewModel {
 
     private let service: any OpenRouterServing
     private let userDefaults: UserDefaults
-    private static let maxRetries = 3
+    private static let maxRetries = 2
     private static let cacheKey = "suggestedTopicsCache"
     private static let systemPrompt = """
     Return only a JSON array of 5 to 7 curious topic strings. No other text or explanation.
