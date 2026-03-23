@@ -215,8 +215,11 @@ private struct QuizQuestionCard: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(Config.Brand.shortBreakColor)
                     Text(question.prompt)
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.white.opacity(0.88))
+                        .lineSpacing(10)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 VStack(spacing: 12) {
@@ -224,7 +227,7 @@ private struct QuizQuestionCard: View {
                         Button {
                             onSelectAnswer(index)
                         } label: {
-                            HStack(spacing: 14) {
+                            HStack(alignment: .top, spacing: 14) {
                                 ZStack {
                                     Circle()
                                         .strokeBorder(circleBorder(for: index), lineWidth: 2)
@@ -236,13 +239,15 @@ private struct QuizQuestionCard: View {
                                             .frame(width: 10, height: 10)
                                     }
                                 }
+                                .padding(.top, 2)
 
                                 Text(choice)
-                                    .font(.system(size: 18, weight: .medium))
+                                    .font(.system(size: 20))
                                     .foregroundStyle(choiceForeground(for: index))
+                                    .lineSpacing(10)
                                     .multilineTextAlignment(.leading)
-
-                                Spacer(minLength: 0)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(.horizontal, 18)
                             .padding(.vertical, 18)
@@ -269,6 +274,7 @@ private struct QuizQuestionCard: View {
                         .font(.subheadline)
                         .foregroundStyle(Config.Brand.readableSecondaryText)
                         .lineSpacing(5)
+                        .multilineTextAlignment(.leading)
                 }
 
                 Spacer(minLength: 0)
@@ -276,10 +282,12 @@ private struct QuizQuestionCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(lessonTitle)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.92))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineLimit(1)
                     Text(topicTitle)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(Config.Brand.readableTertiaryText)
+                        .lineLimit(1)
                 }
             }
             .padding(.horizontal, 24)
