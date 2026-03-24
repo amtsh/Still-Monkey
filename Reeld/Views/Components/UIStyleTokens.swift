@@ -23,9 +23,18 @@ enum ReeldScreenBackground {
     }
 }
 
-/// `HomeView` hero card inner padding (large title / recent lists use scroll margin only).
+/// Spacing and insets for `HomeView` scroll content, hero, and sections.
 enum HomeLayout {
     static let horizontalContentInset: CGFloat = 20
+    /// Outer `ScrollView` horizontal padding (matches section rows).
+    static let scrollHorizontalPadding: CGFloat = 16
+    static let scrollTopPadding: CGFloat = 14
+    static let scrollBottomPadding: CGFloat = 24
+    static let sectionSpacing: CGFloat = 24
+    static let groupedSectionInnerSpacing: CGFloat = 16
+    static let sectionHeaderSpacing: CGFloat = 12
+    static let heroCardHeight: CGFloat = 210
+    static let dividerLeadingInset: CGFloat = 30
 }
 
 /// Long-form reading (matches reel body / quiz copy rhythm).

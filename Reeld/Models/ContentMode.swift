@@ -3,7 +3,7 @@ import Foundation
 enum ContentMode: String, CaseIterable, Codable {
     case learn = "Learn"
     case story = "Story"
-    case duolingo = "Duolingo"
+    case path = "Path"
 
     var tabLabel: String {
         rawValue
@@ -15,7 +15,7 @@ enum ContentMode: String, CaseIterable, Codable {
             return "What do you want to learn?"
         case .story:
             return "What story do you want to read?"
-        case .duolingo:
+        case .path:
             return "What do you want to master?"
         }
     }
@@ -26,7 +26,7 @@ enum ContentMode: String, CaseIterable, Codable {
             return "Cooking ..."
         case .story:
             return "Writing your story ..."
-        case .duolingo:
+        case .path:
             return "Building your lesson path ..."
         }
     }
@@ -37,7 +37,7 @@ enum ContentMode: String, CaseIterable, Codable {
             return "Enter a topic to start learning"
         case .story:
             return "Enter a topic to start reading a story"
-        case .duolingo:
+        case .path:
             return "Enter a topic to build a lesson path"
         }
     }
@@ -48,7 +48,7 @@ enum ContentMode: String, CaseIterable, Codable {
             return "Feed"
         case .story:
             return "Story"
-        case .duolingo:
+        case .path:
             return "Path"
         }
     }

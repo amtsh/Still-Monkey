@@ -129,7 +129,7 @@ struct ContentView: View {
         switch viewModel.contentMode {
         case .learn, .story:
             generationRequestID = UUID()
-        case .duolingo:
+        case .path:
             showDuolingoCourseIfNeeded()
             duolingoCourseRequestID = UUID()
         }

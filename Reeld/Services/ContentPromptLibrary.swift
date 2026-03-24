@@ -13,7 +13,7 @@ enum ContentPromptLibrary {
                 systemPrompt: storySystemPrompt,
                 userPrompt: "Create a story about: \(topic)"
             )
-        case .duolingo:
+        case .path:
             return nil
         }
     }

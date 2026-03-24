@@ -66,7 +66,7 @@ struct FloatingSearchBar: View {
             return Config.Brand.focusColor
         case .story:
             return Config.Brand.accentColor(at: 7)
-        case .duolingo:
+        case .path:
             return Config.Brand.shortBreakColor
         }
     }

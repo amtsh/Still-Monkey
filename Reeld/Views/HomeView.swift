@@ -12,47 +12,6 @@ struct HomeView: View {
     @Bindable var viewModel: TopicViewModel
     @Bindable var courseViewModel: DuolingoCourseViewModel
 
-    private enum HomeRecentItem: Identifiable {
-        case reel(RecentContentSnapshot)
-        case duolingo(DuolingoCourseSnapshot)
-
-        var id: String {
-            switch self {
-            case let .reel(snapshot):
-                return snapshot.id
-            case let .duolingo(snapshot):
-                return snapshot.id
-            }
-        }
-
-        var updatedAt: Date {
-            switch self {
-            case let .reel(snapshot):
-                return snapshot.updatedAt
-            case let .duolingo(snapshot):
-                return snapshot.updatedAt
-            }
-        }
-
-        var displayTopic: String {
-            switch self {
-            case let .reel(snapshot):
-                return snapshot.displayTopic
-            case let .duolingo(snapshot):
-                return snapshot.displayTopic
-            }
-        }
-
-        var iconName: String {
-            switch self {
-            case let .reel(snapshot):
-                return snapshot.mode == .story ? "moon.zzz" : "book"
-            case .duolingo:
-                return "point.3.connected.trianglepath.dotted"
-            }
-        }
-    }
-
     @State private var searchText = ""
     @State private var isEditingHistory = false
     @State private var pendingDeleteItem: HomeRecentItem?
@@ -69,24 +28,12 @@ struct HomeView: View {
             && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var recentItems: [HomeRecentItem] {
-        (viewModel.recentItems.map(HomeRecentItem.reel) + courseViewModel.recentCourses.map(HomeRecentItem.duolingo))
-            .sorted(by: { $0.updatedAt > $1.updatedAt })
+    private var mergedRecentItems: [HomeRecentItem] {
+        HomeRecentFeed.mergedItems(reels: viewModel.recentItems, courses: courseViewModel.recentCourses)
     }
 
-    private var todayItems: [HomeRecentItem] {
-        let calendar = Calendar.current
-        return recentItems.filter { calendar.isDateInToday($0.updatedAt) }
-    }
-
-    private var yesterdayItems: [HomeRecentItem] {
-        let calendar = Calendar.current
-        return recentItems.filter { calendar.isDateInYesterday($0.updatedAt) }
-    }
-
-    private var earlierItems: [HomeRecentItem] {
-        let calendar = Calendar.current
-        return recentItems.filter { !calendar.isDateInToday($0.updatedAt) && !calendar.isDateInYesterday($0.updatedAt) }
+    private var recentBuckets: HomeRecentFeed.Buckets {
+        HomeRecentFeed.Buckets.partition(mergedRecentItems)
     }
 
     var body: some View {
@@ -95,32 +42,43 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    heroCard
-                    if !recentItems.isEmpty {
-                        recentItemsSection
+                VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
+                    HomeHeroCardView()
+
+                    if mergedRecentItems.isEmpty {
+                        emptyRecentHint
                     }
+
+                    if !mergedRecentItems.isEmpty {
+                        HomeRecentSectionsView(
+                            buckets: recentBuckets,
+                            isEditingHistory: $isEditingHistory,
+                            reduceMotion: reduceMotion,
+                            lastAccessedReelID: viewModel.lastAccessedRecentID,
+                            lastAccessedCourseID: courseViewModel.lastAccessedCourseID,
+                            onOpen: openRecent,
+                            onRequestDelete: requestDeleteRecent
+                        )
+                    }
+
                     SuggestedTopicsView(viewModel: suggestedViewModel) { topic in
+                        viewModel.contentMode = .learn
                         viewModel.topic = topic
                         searchText = topic
                         onStartLearning?()
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-                .padding(.bottom, 24)
+                .padding(.horizontal, HomeLayout.scrollHorizontalPadding)
+                .padding(.top, HomeLayout.scrollTopPadding)
+                .padding(.bottom, HomeLayout.scrollBottomPadding)
             }
+            .scrollDisabled(isSearchFocused.wrappedValue)
 
             if isSearchFocused.wrappedValue {
-                Rectangle()
-                    .fill(.ultraThinMaterial)
-                    .overlay(Color.black.opacity(0.38))
-                    .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
+                searchFocusOverlay
             }
         }
-        .animation(.easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
+        .animation(reduceMotion ? .none : .easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
         .navigationTitle("Still Monkey")
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
@@ -164,122 +122,26 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
     }
 
-    private var heroCard: some View {
-        GeometryReader { proxy in
-            let contentWidth = max(proxy.size.width - 40, 0)
-            let leftWidth = contentWidth * 0.7
-            let rightWidth = contentWidth * 0.3
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Feed your curiosity.")
-                        .font(.system(size: 24, weight: .semibold))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(2)
-                        .minimumScaleFactor(0.85)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    Config.Brand.focusColor,
-                                    Config.Brand.longBreakColor,
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Text("Learn something real.")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(Config.Brand.readableSecondaryText)
-                        .lineSpacing(2)
-                }
-                .frame(width: leftWidth, alignment: .leading)
-
-                LottieView(name: "flower_plant", speed: 0.9)
-                    .frame(width: rightWidth, height: proxy.size.height - 40)
-                    .opacity(0.95)
-            }
-            .padding(.horizontal, HomeLayout.horizontalContentInset)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
-        }
-        .frame(height: 210)
-        .glassCard(cornerRadius: 24)
+    private var emptyRecentHint: some View {
+        Text("Your recent topics will appear here after you learn or open a path.")
+            .font(.subheadline)
+            .foregroundStyle(Config.Brand.readableTertiaryText)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityLabel("Your recent topics will appear here after you learn or open a path.")
     }
 
-    private var recentItemsSection: some View {
-        let sections: [(id: String, title: String, items: [HomeRecentItem])] = [
-            ("today", "Recent", todayItems),
-            ("yesterday", "Yesterday", yesterdayItems),
-            ("earlier", "Earlier", earlierItems),
-        ]
-
-        return VStack(alignment: .leading, spacing: 16) {
-            ForEach(sections, id: \.id) { section in
-                groupedRecentSection(id: section.id, title: section.title, items: section.items)
+    private var searchFocusOverlay: some View {
+        Rectangle()
+            .fill(.ultraThinMaterial)
+            .overlay(Color.black.opacity(0.38))
+            .ignoresSafeArea()
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isSearchFocused.wrappedValue = false
             }
-        }
-    }
-
-    @ViewBuilder
-    private func groupedRecentSection(id _: String, title: String, items: [HomeRecentItem]) -> some View {
-        if !items.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 12) {
-                    Text(title)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(Config.Brand.readableTertiaryText)
-
-                    Spacer()
-
-                    Button(isEditingHistory ? "Done" : "Edit") {
-                        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.2)) {
-                            isEditingHistory.toggle()
-                        }
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(Config.Brand.readableTertiaryText)
-                    .buttonStyle(.plain)
-                }
-
-                VStack(spacing: 0) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        recentRow(item, isLastSeen: isLastSeen(item))
-
-                        if index < items.count - 1 {
-                            Divider()
-                                .background(.white.opacity(0.12))
-                                .padding(.leading, 30)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func recentRow(_ item: HomeRecentItem, isLastSeen: Bool) -> some View {
-        let row = SearchRowView(
-            iconName: item.iconName,
-            title: item.displayTopic,
-            trailingLabel: isLastSeen ? "Last seen" : nil,
-            isEditing: isEditingHistory,
-            onTap: { openRecent(item) },
-            onDelete: isEditingHistory ? { requestDeleteRecent(item) } : nil
-        )
-
-        if isEditingHistory {
-            row
-        } else {
-            row
-                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    Button(role: .destructive) {
-                        requestDeleteRecent(item)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-        }
+            .transition(.opacity)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityLabel("Dismiss search")
     }
 
     private func openRecent(_ item: HomeRecentItem) {
@@ -292,7 +154,7 @@ struct HomeView: View {
             searchText = snapshot.topic
             onOpenFeed?()
         case let .duolingo(snapshot):
-            viewModel.contentMode = .duolingo
+            viewModel.contentMode = .path
             viewModel.topic = snapshot.topic
             searchText = snapshot.topic
             courseViewModel.loadRecentCourse(snapshot)
@@ -323,14 +185,5 @@ struct HomeView: View {
         isSearchFocused.wrappedValue = false
         HapticsFeedback.impactMedium()
         onStartLearning?()
-    }
-
-    private func isLastSeen(_ item: HomeRecentItem) -> Bool {
-        switch item {
-        case let .reel(snapshot):
-            return snapshot.id == viewModel.lastAccessedRecentID
-        case let .duolingo(snapshot):
-            return snapshot.id == courseViewModel.lastAccessedCourseID
-        }
     }
 }
