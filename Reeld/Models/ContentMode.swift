@@ -16,7 +16,7 @@ enum ContentMode: String, CaseIterable, Codable {
         case .story:
             return "What story do you want to read?"
         case .duolingo:
-            return "What do you want to practice?"
+            return "What do you want to master?"
         }
     }
 

@@ -41,7 +41,7 @@ struct ContentView: View {
             )
             .safeAreaInset(edge: .bottom) {
                 if path.isEmpty {
-                    FloatingSearchBar(viewModel: viewModel)
+                    FloatingSearchBar(viewModel: viewModel, isSearchFocused: $isSearchFocused)
                 }
             }
             .navigationDestination(for: Route.self) { route in

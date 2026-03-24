@@ -110,7 +110,17 @@ struct HomeView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 24)
             }
+
+            if isSearchFocused.wrappedValue {
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(Color.black.opacity(0.38))
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+                    .transition(.opacity)
+            }
         }
+        .animation(.easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
         .navigationTitle("Still Monkey")
         .navigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
