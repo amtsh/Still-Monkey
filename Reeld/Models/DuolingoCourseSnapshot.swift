@@ -29,6 +29,11 @@ struct DuolingoCourseSnapshot: Codable, Identifiable {
         topic.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
     }
 
+    /// Every lesson in the map has been completed; user can extend with more lessons.
+    var isEntirePathCompleted: Bool {
+        !lessons.isEmpty && lessons.allSatisfy { completedLessonIDs.contains($0.id) }
+    }
+
     var currentActionableLessonID: String? {
         if
             let currentLessonID,

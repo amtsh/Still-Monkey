@@ -34,7 +34,14 @@ enum HomeLayout {
     static let groupedSectionInnerSpacing: CGFloat = 16
     static let sectionHeaderSpacing: CGFloat = 12
     static let heroCardHeight: CGFloat = 210
-    static let dividerLeadingInset: CGFloat = 30
+    /// Leading icon column + `HStack` spacing before title (aligns dividers with text).
+    static let listRowLeadingIconWidth: CGFloat = 20
+    static let listRowIconTitleSpacing: CGFloat = 12
+    static var dividerLeadingInset: CGFloat { listRowLeadingIconWidth + listRowIconTitleSpacing }
+
+    /// HIG minimum touch target (44pt); with 11pt vertical padding, single-line rows read as standard list density.
+    static let listRowMinHeight: CGFloat = 44
+    static let listRowVerticalPadding: CGFloat = 11
 }
 
 /// Long-form reading (matches reel body / quiz copy rhythm).

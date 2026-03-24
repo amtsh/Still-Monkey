@@ -23,6 +23,10 @@ enum DuolingoPayloadParser {
         let lessons: [CourseLessonPayload]
     }
 
+    private struct ExtendLessonsPayload: Decodable {
+        let lessons: [CourseLessonPayload]
+    }
+
     private struct CourseLessonPayload: Decodable {
         let id: String?
         let title: String
@@ -99,6 +103,54 @@ enum DuolingoPayloadParser {
         )
         snapshot.unlockFirstLessonIfNeeded()
         return snapshot
+    }
+
+    /// Parses additional lessons for an existing course; assigns sequential `order` from `startingOrder`.
+    static func parseAdditionalLessons(
+        from content: String,
+        startingOrder: Int,
+        existingLessonIDs: Set<String>
+    ) throws -> [DuolingoLessonSummary] {
+        let payload = try decode(ExtendLessonsPayload.self, from: content)
+
+        var uniqueLessons: [DuolingoLessonSummary] = []
+        var seenIDs = Set<String>()
+
+        for lesson in payload.lessons.prefix(8) {
+            let trimmedTitle = lesson.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            let trimmedSummary = lesson.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedTitle.isEmpty, !trimmedSummary.isEmpty else { continue }
+
+            let idSource = lesson.id?.trimmingCharacters(in: .whitespacesAndNewlines)
+            var baseID = sanitizeID((idSource?.isEmpty == false) ? idSource! : trimmedTitle)
+            if baseID.isEmpty {
+                baseID = "lesson-ext-\(startingOrder + uniqueLessons.count + 1)"
+            }
+
+            var uniqueID = baseID
+            var n = 0
+            while seenIDs.contains(uniqueID) || existingLessonIDs.contains(uniqueID) {
+                n += 1
+                uniqueID = "\(baseID)-\(n)"
+            }
+            seenIDs.insert(uniqueID)
+
+            let order = startingOrder + uniqueLessons.count + 1
+            uniqueLessons.append(
+                DuolingoLessonSummary(
+                    id: uniqueID,
+                    order: order,
+                    title: trimmedTitle,
+                    summary: trimmedSummary
+                )
+            )
+        }
+
+        guard uniqueLessons.count >= 3 else {
+            throw ParserError.invalidCourse
+        }
+
+        return uniqueLessons
     }
 
     static func parseLessonProgress(

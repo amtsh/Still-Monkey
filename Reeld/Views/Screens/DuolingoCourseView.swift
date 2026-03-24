@@ -59,6 +59,12 @@ struct DuolingoCourseView: View {
                 ForEach(Array(course.lessons.enumerated()), id: \.element.id) { index, lesson in
                     lessonNode(lesson, isLast: index == course.lessons.count - 1)
                 }
+
+                if viewModel.isPathFullyCompleted {
+                    extendPathCallout
+                        .padding(.top, 20)
+                        .id("extendPathCallout")
+                }
             }
         } else if viewModel.isLoading {
             loadingState
@@ -67,6 +73,57 @@ struct DuolingoCourseView: View {
         } else {
             placeholderState
         }
+    }
+
+    private var extendPathCallout: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.triangle.branch")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Config.Brand.focusColor)
+                Text("Continue deeper")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+            }
+
+            Text("You've finished every lesson. Load more lessons to go deeper with advanced topics on the same path.")
+                .font(.subheadline)
+                .foregroundStyle(Config.Brand.readableSecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Button {
+                HapticsFeedback.impactMedium()
+                lastAutoScrolledLessonID = nil
+                Task { await viewModel.extendPathWithMoreLessons() }
+            } label: {
+                HStack(spacing: 8) {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.9)
+                    }
+                    Text(viewModel.isLoading ? "Loading…" : "Load more lessons")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Config.Brand.startButtonFill)
+            .foregroundStyle(Config.Brand.startButtonTextColor)
+            .disabled(viewModel.isLoading)
+            .accessibilityLabel("Load more lessons")
+
+            if let err = viewModel.error, viewModel.isPathFullyCompleted {
+                Text(err)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.orange.opacity(0.95))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .glassCard(cornerRadius: 24)
     }
 
     private var headerCard: some View {
@@ -159,7 +216,7 @@ struct DuolingoCourseView: View {
                         LinearGradient(
                             colors: [
                                 Color.white.opacity(0.24),
-                                Color.white.opacity(0.04)
+                                Color.white.opacity(0.04),
                             ],
                             startPoint: .top,
                             endPoint: .bottom

@@ -37,14 +37,14 @@ struct SearchRowView: View {
     }
 
     private var editingRow: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: HomeLayout.listRowIconTitleSpacing) {
             Image(systemName: iconName)
-                .font(.system(size: 13, weight: .regular))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(iconColor.opacity(0.88))
-                .frame(width: 16)
+                .frame(width: HomeLayout.listRowLeadingIconWidth, alignment: .center)
 
             Text(title)
-                .font(.system(size: 14, weight: .medium))
+                .font(.body.weight(.medium))
                 .foregroundStyle(.white.opacity(0.95))
                 .lineLimit(1)
 
@@ -55,25 +55,26 @@ struct SearchRowView: View {
                     onDelete()
                 } label: {
                     Image(systemName: "trash")
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                 }
                 .buttonStyle(.plain)
+                .frame(minWidth: UITouchTarget.minimum, minHeight: UITouchTarget.minimum)
             }
         }
-        .padding(.vertical, 8)
-        .frame(minHeight: 40)
+        .padding(.vertical, HomeLayout.listRowVerticalPadding)
+        .frame(minHeight: HomeLayout.listRowMinHeight, alignment: .center)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func rowContent(showChevron: Bool) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: HomeLayout.listRowIconTitleSpacing) {
             Image(systemName: iconName)
-                .font(.system(size: 13, weight: .regular))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(iconColor.opacity(0.88))
-                .frame(width: 16)
+                .frame(width: HomeLayout.listRowLeadingIconWidth, alignment: .center)
 
             Text(title)
-                .font(.system(size: 14))
+                .font(.body)
                 .foregroundStyle(.white.opacity(0.95))
                 .lineLimit(1)
 
@@ -81,7 +82,7 @@ struct SearchRowView: View {
 
             if let trailingLabel {
                 Text(trailingLabel)
-                    .font(.system(size: 10, weight: .medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(Config.Brand.readableSecondaryText)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
@@ -92,12 +93,13 @@ struct SearchRowView: View {
 
             if showChevron {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.28))
+                    .frame(width: 20, alignment: .center)
             }
         }
-        .padding(.vertical, 8)
-        .frame(minHeight: 40)
+        .padding(.vertical, HomeLayout.listRowVerticalPadding)
+        .frame(minHeight: HomeLayout.listRowMinHeight, alignment: .center)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

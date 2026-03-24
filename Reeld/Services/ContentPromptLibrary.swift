@@ -25,6 +25,34 @@ enum ContentPromptLibrary {
         )
     }
 
+    /// Continuation lessons after the learner has finished the current map (deeper / advanced track).
+    static func duolingoExtendCoursePrompt(
+        topic: String,
+        courseTitle: String,
+        completedLessonLines: [String],
+        existingLessonIDs: [String]
+    ) -> ContentPrompt {
+        let completedBlock = completedLessonLines.isEmpty
+            ? "None."
+            : completedLessonLines.joined(separator: "\n")
+        let existingIDsBlock = existingLessonIDs.joined(separator: ", ")
+
+        return ContentPrompt(
+            systemPrompt: duolingoExtendCourseSystemPrompt,
+            userPrompt: """
+            Topic: \(topic)
+            Course title: \(courseTitle)
+
+            Lessons already completed (do not repeat these titles or ids):
+            \(completedBlock)
+
+            Existing lesson ids you must NOT reuse: \(existingIDsBlock)
+
+            Generate the next segment of the path that goes deeper: more advanced, applied, or specialized topics that build on what was covered.
+            """
+        )
+    }
+
     static func duolingoLessonPrompt(
         topic: String,
         courseTitle: String,
@@ -106,6 +134,28 @@ enum ContentPromptLibrary {
     - Titles must be short and clear for mobile UI.
     - Summaries must be one informative sentence (what the learner will understand or do), under 120 characters—avoid vague marketing language.
     - Every lesson id must be unique, lowercase, and hyphenated.
+    - Do not include markdown, code fences, comments, or any text outside the JSON object.
+    """
+
+    private static let duolingoExtendCourseSystemPrompt = """
+    The learner has already completed every lesson in their current path. You are adding NEW lessons that continue the same course, going deeper or more advanced.
+    Return only valid JSON matching this exact shape:
+
+    {
+      "lessons": [
+        {
+          "id": "lesson-unique-slug",
+          "title": "Lesson title",
+          "summary": "One concise sentence about what this lesson covers."
+        }
+      ]
+    }
+
+    Rules:
+    - Return 4 to 8 new lessons. Each must be distinct from prior lessons and strictly more advanced or applied than the completed list.
+    - Lesson ids must be unique, lowercase, hyphenated, and must not appear in the "existing lesson ids" list provided by the user.
+    - Titles must be short and clear for mobile UI.
+    - Summaries must be one informative sentence (under 120 characters).
     - Do not include markdown, code fences, comments, or any text outside the JSON object.
     """
 

@@ -31,6 +31,11 @@ final class DuolingoCourseViewModel {
         course?.currentActionableLessonID
     }
 
+    /// True when every lesson on the map is completed; user can generate a deeper segment.
+    var isPathFullyCompleted: Bool {
+        course?.isEntirePathCompleted ?? false
+    }
+
     func startCourse(for topic: String, forceRefresh: Bool = false) async {
         let trimmedTopic = topic.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTopic.isEmpty else { return }
@@ -73,6 +78,64 @@ final class DuolingoCourseViewModel {
     func refreshCurrentCourse() async {
         guard !topic.isEmpty else { return }
         await startCourse(for: topic, forceRefresh: true)
+    }
+
+    /// Appends new lessons after the learner finished the whole path; unlocks the first new lesson.
+    func extendPathWithMoreLessons() async {
+        guard var course, course.isEntirePathCompleted else { return }
+
+        let apiKey = userDefaults.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
+        guard !apiKey.isEmpty else {
+            error = "Add OpenRouter API key in Settings."
+            return
+        }
+
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
+
+        let existingIDs = Set(course.lessons.map(\.id))
+        let maxOrder = course.lessons.map(\.order).max() ?? 0
+
+        let completedLines: [String] = course.lessons
+            .filter { course.completedLessonIDs.contains($0.id) }
+            .sorted(by: { $0.order < $1.order })
+            .map { "\($0.order). \($0.title) — \($0.summary)" }
+
+        do {
+            let prompt = ContentPromptLibrary.duolingoExtendCoursePrompt(
+                topic: course.topic,
+                courseTitle: course.courseTitle,
+                completedLessonLines: completedLines,
+                existingLessonIDs: Array(existingIDs)
+            )
+            let content = try await service.fetchJSONWithRetry(
+                prompt: prompt.userPrompt,
+                systemPrompt: prompt.systemPrompt,
+                apiKey: apiKey,
+                maxTokens: 2200
+            )
+            let newLessons = try DuolingoPayloadParser.parseAdditionalLessons(
+                from: content,
+                startingOrder: maxOrder,
+                existingLessonIDs: existingIDs
+            )
+
+            course.lessons.append(contentsOf: newLessons)
+            course.lessons.sort { $0.order < $1.order }
+
+            if let firstNew = newLessons.first {
+                if !course.unlockedLessonIDs.contains(firstNew.id) {
+                    course.unlockedLessonIDs.append(firstNew.id)
+                }
+                course.currentLessonID = firstNew.id
+            }
+
+            course.updatedAt = .now
+            saveCourse(course)
+        } catch {
+            self.error = "Could not add more lessons. Try again."
+        }
     }
 
     func loadRecentCourse(_ snapshot: DuolingoCourseSnapshot) {

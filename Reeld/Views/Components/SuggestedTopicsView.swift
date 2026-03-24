@@ -57,10 +57,10 @@ struct SuggestedTopicsView: View {
     private var loadingView: some View {
         VStack(spacing: 0) {
             ForEach(0 ..< 5, id: \.self) { index in
-                HStack(spacing: 14) {
+                HStack(spacing: HomeLayout.listRowIconTitleSpacing) {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.white.opacity(0.12))
-                        .frame(width: 16, height: 12)
+                        .frame(width: HomeLayout.listRowLeadingIconWidth, height: 12)
 
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.white.opacity(0.12))
@@ -71,13 +71,13 @@ struct SuggestedTopicsView: View {
                         .fill(.white.opacity(0.12))
                         .frame(width: 14, height: 12)
                 }
-                .padding(.vertical, 8)
-                .frame(minHeight: 40)
+                .padding(.vertical, HomeLayout.listRowVerticalPadding)
+                .frame(minHeight: HomeLayout.listRowMinHeight)
 
                 if index < 4 {
                     Divider()
                         .background(.white.opacity(0.12))
-                        .padding(.leading, 30)
+                        .padding(.leading, HomeLayout.dividerLeadingInset)
                 }
             }
         }
@@ -111,7 +111,7 @@ struct SuggestedTopicsView: View {
                 if index < viewModel.topics.count - 1 {
                     Divider()
                         .background(.white.opacity(0.12))
-                        .padding(.leading, 30)
+                        .padding(.leading, HomeLayout.dividerLeadingInset)
                 }
             }
         }
