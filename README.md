@@ -2,6 +2,12 @@
 
 Still Monkey app is a focused, AI-powered learning app that turns any topic into short, swipeable lessons you can consume in minutes.
 
+## Code map
+
+- **Entry**: `StillMonkeyApp` → `ContentView` (root `NavigationStack` and navigation destinations).
+- **Routing**: `ContentView` pushes `ReelsView` (Learn/Story feed), `PathCourseView`, and `PathLessonSessionView` based on internal `Route` cases.
+- **State**: `TopicViewModel` drives topic text, content mode (Learn / Story / Path), reels feed, and generation; `PathCourseViewModel` owns the structured course, lesson progress, and path navigation.
+
 ## What It Offers
 
 - **Learn mode**: Quickly understand a topic through concise, reel-style cards.
