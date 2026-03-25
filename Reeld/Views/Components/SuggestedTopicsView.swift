@@ -7,7 +7,7 @@ import SwiftUI
 
 struct SuggestedTopicsView: View {
     @Bindable var viewModel: SuggestedTopicsViewModel
-    var onSelectTopic: (String) -> Void
+    var onSelectTopic: (String, ContentMode) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -41,6 +41,9 @@ struct SuggestedTopicsView: View {
 
             contentView
         }
+        .onAppear {
+            Task { await viewModel.fetchIfEmpty() }
+        }
     }
 
     @ViewBuilder
@@ -49,23 +52,23 @@ struct SuggestedTopicsView: View {
             loadingView
         } else if let error = viewModel.error {
             errorView(message: error)
-        } else if !viewModel.topics.isEmpty {
+        } else if !viewModel.topicRows.isEmpty {
             topicsRowsView
         }
     }
 
     private var loadingView: some View {
         VStack(spacing: 0) {
-            ForEach(0 ..< 5, id: \.self) { index in
+            ForEach(0 ..< 9, id: \.self) { index in
                 HStack(spacing: HomeLayout.listRowIconTitleSpacing) {
-                    RoundedRectangle(cornerRadius: 4)
-                        .fill(.white.opacity(0.12))
-                        .frame(width: HomeLayout.listRowLeadingIconWidth, height: 12)
-
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.white.opacity(0.12))
                         .frame(height: 12)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(.white.opacity(0.12))
+                        .frame(width: 52, height: 18)
 
                     RoundedRectangle(cornerRadius: 4)
                         .fill(.white.opacity(0.12))
@@ -74,7 +77,7 @@ struct SuggestedTopicsView: View {
                 .padding(.vertical, HomeLayout.listRowVerticalPadding)
                 .frame(minHeight: HomeLayout.listRowMinHeight)
 
-                if index < 4 {
+                if index < 8 {
                     Divider()
                         .background(.white.opacity(0.12))
                         .padding(.leading, HomeLayout.dividerLeadingInset)
@@ -105,10 +108,10 @@ struct SuggestedTopicsView: View {
 
     private var topicsRowsView: some View {
         VStack(spacing: 0) {
-            ForEach(Array(viewModel.topics.enumerated()), id: \.element) { index, topic in
-                topicRow(topic)
+            ForEach(Array(viewModel.topicRows.enumerated()), id: \.element.id) { index, row in
+                topicRow(row)
 
-                if index < viewModel.topics.count - 1 {
+                if index < viewModel.topicRows.count - 1 {
                     Divider()
                         .background(.white.opacity(0.12))
                         .padding(.leading, HomeLayout.dividerLeadingInset)
@@ -117,10 +120,16 @@ struct SuggestedTopicsView: View {
         }
     }
 
-    private func topicRow(_ topic: String) -> some View {
-        SearchRowView(iconName: "magnifyingglass", title: topic) {
+    private func topicRow(_ row: SuggestedTopicRow) -> some View {
+        SearchRowView(
+            iconName: "magnifyingglass",
+            title: row.topic,
+            trailingLabel: row.mode.tabLabel,
+            trailingPillAccent: row.mode.modeAccentColor,
+            leadingIconHidden: true
+        ) {
             HapticsFeedback.impactSoft()
-            onSelectTopic(topic)
+            onSelectTopic(row.topic, row.mode)
         }
     }
 }

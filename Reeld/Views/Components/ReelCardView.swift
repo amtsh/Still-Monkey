@@ -13,8 +13,6 @@ struct ReelCardView: View {
     let chapterTitle: String?
     let topicTitle: String
     let showsProgressBar: Bool
-    /// When true (e.g. reading mode with nav hidden), progress strip is visually quieter.
-    var zenModeDimProgress: Bool = false
 
     var body: some View {
         GeometryReader { proxy in
@@ -25,9 +23,7 @@ struct ReelCardView: View {
                         .padding(.bottom, 24)
                         .offset(y: reelBarOffset(for: proxy))
                         .opacity(
-                            showsProgressBar
-                                ? reelBarVisibility(for: proxy) * (zenModeDimProgress ? 0.35 : 1)
-                                : 0
+                            showsProgressBar ? reelBarVisibility(for: proxy) : 0
                         )
                         .allowsHitTesting(false)
                 }

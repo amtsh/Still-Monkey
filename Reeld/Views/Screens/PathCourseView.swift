@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct DuolingoCourseView: View {
-    @Bindable var viewModel: DuolingoCourseViewModel
+struct PathCourseView: View {
+    @Bindable var viewModel: PathCourseViewModel
     var onOpenLesson: (String) -> Void
 
     @State private var lastAutoScrolledLessonID: String?
@@ -80,7 +80,7 @@ struct DuolingoCourseView: View {
             HStack(spacing: 10) {
                 Image(systemName: "arrow.triangle.branch")
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Config.Brand.focusColor)
+                    .foregroundStyle(ContentMode.path.modeAccentColor)
                 Text("Continue deeper")
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.white)
@@ -128,13 +128,21 @@ struct DuolingoCourseView: View {
 
     private var headerCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Duolingo Mode")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Config.Brand.focusColor)
-                .padding(.horizontal, 12)
+            Text(ContentMode.path.tabLabel)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .multilineTextAlignment(.center)
                 .padding(.vertical, 6)
-                .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().strokeBorder(Color.white.opacity(0.08), lineWidth: 1))
+                .frame(width: HomeLayout.modePillWidth)
+                .background(
+                    Capsule()
+                        .fill(ContentMode.path.modeAccentColor.opacity(0.22))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(ContentMode.path.modeAccentColor.opacity(0.55), lineWidth: 1)
+                )
+                .glassBackground(in: Capsule(), interactive: false)
 
             Text(viewModel.course?.courseTitle ?? "Build a new lesson path")
                 .font(.system(size: 28, weight: .bold))
@@ -149,7 +157,7 @@ struct DuolingoCourseView: View {
         .glassCard(cornerRadius: 24)
     }
 
-    private func lessonNode(_ lesson: DuolingoLessonSummary, isLast: Bool) -> some View {
+    private func lessonNode(_ lesson: PathLessonSummary, isLast: Bool) -> some View {
         let state = viewModel.accessState(for: lesson)
         let horizontalOffset = pathOffset(for: lesson.order)
 
@@ -270,7 +278,7 @@ struct DuolingoCourseView: View {
             Text("No lesson path yet")
                 .font(.headline)
                 .foregroundStyle(.white)
-            Text("Search a topic from the home screen in Duolingo mode to create a vertical lesson map.")
+            Text("Search a topic from the home screen in Path mode to create a vertical lesson map.")
                 .font(.subheadline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)
         }
@@ -311,7 +319,7 @@ struct DuolingoCourseView: View {
         return "Building a lesson path for \(viewModel.topic.localizedCapitalized)"
     }
 
-    private func iconName(for state: DuolingoLessonAccessState) -> String {
+    private func iconName(for state: PathLessonAccessState) -> String {
         switch state {
         case .locked:
             return "lock.fill"
@@ -324,20 +332,20 @@ struct DuolingoCourseView: View {
         }
     }
 
-    private func circleFill(for state: DuolingoLessonAccessState) -> Color {
+    private func circleFill(for state: PathLessonAccessState) -> Color {
         switch state {
         case .locked:
             return Color.white.opacity(0.08)
         case .completed:
             return Config.Brand.shortBreakColor.opacity(0.85)
         case .current:
-            return Config.Brand.focusColor
+            return ContentMode.path.modeAccentColor
         case .unlocked:
             return Config.Brand.accentColor(at: 4)
         }
     }
 
-    private func circleStroke(for state: DuolingoLessonAccessState) -> Color {
+    private func circleStroke(for state: PathLessonAccessState) -> Color {
         switch state {
         case .locked:
             return .white.opacity(0.08)
@@ -350,20 +358,20 @@ struct DuolingoCourseView: View {
         }
     }
 
-    private func shadowColor(for state: DuolingoLessonAccessState) -> Color {
+    private func shadowColor(for state: PathLessonAccessState) -> Color {
         switch state {
         case .locked:
             return .clear
         case .completed:
             return Config.Brand.shortBreakColor.opacity(0.26)
         case .current:
-            return Config.Brand.focusColor.opacity(0.35)
+            return ContentMode.path.modeAccentColor.opacity(0.35)
         case .unlocked:
             return Config.Brand.accentColor(at: 4).opacity(0.28)
         }
     }
 
-    private func statusLabel(for lesson: DuolingoLessonSummary, state: DuolingoLessonAccessState) -> String {
+    private func statusLabel(for lesson: PathLessonSummary, state: PathLessonAccessState) -> String {
         switch state {
         case .locked:
             return "Locked"
@@ -382,14 +390,14 @@ struct DuolingoCourseView: View {
         }
     }
 
-    private func statusColor(for state: DuolingoLessonAccessState) -> Color {
+    private func statusColor(for state: PathLessonAccessState) -> Color {
         switch state {
         case .locked:
             return .white.opacity(0.45)
         case .completed:
             return Config.Brand.shortBreakColor
         case .current:
-            return Config.Brand.focusColor
+            return ContentMode.path.modeAccentColor
         case .unlocked:
             return Config.Brand.accentColor(at: 4)
         }

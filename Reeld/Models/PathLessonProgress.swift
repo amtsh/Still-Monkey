@@ -1,6 +1,6 @@
 import Foundation
 
-struct DuolingoLessonProgress: Codable, Identifiable {
+struct PathLessonProgress: Codable, Identifiable {
     let lessonID: String
     var reels: [StoredReel]
     var quizQuestions: [QuizQuestion]

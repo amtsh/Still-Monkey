@@ -54,9 +54,11 @@ final class TopicViewModel {
         }
     }
 
-    func generateContent() async {
-        let trimmedTopic = topic.trimmingCharacters(in: .whitespacesAndNewlines)
+    /// - Parameter topicOverride: When set (e.g. captured before search UI clears `topic`), used instead of `topic` so generation still runs.
+    func generateContent(topicOverride: String? = nil) async {
+        let trimmedTopic = (topicOverride ?? topic).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTopic.isEmpty else { return }
+        topic = trimmedTopic
         guard let prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic) else {
             error = "This mode uses the lesson map flow."
             return
@@ -127,7 +129,7 @@ final class TopicViewModel {
             return "Something went wrong. Please try again."
         }
         if error is TopicGenerationError {
-            return "Could not read the model’s response after retrying. Try again or rephrase your topic."
+            return "Something went wrong. Please try again."
         }
         if let urlError = error as? URLError {
             switch urlError.code {
@@ -147,9 +149,9 @@ final class TopicViewModel {
                 return "App configuration error. Update Reeld or contact support."
             case .invalidResponse:
                 return "The server returned an unexpected response. Try again."
-            case .streamFailed(let message):
+            case let .streamFailed(message):
                 return "OpenRouter: \(message)"
-            case .httpError(let code, _):
+            case let .httpError(code, _):
                 if code == 401 || code == 403 {
                     return "Your API key was rejected. Check Settings → OpenRouter key."
                 }

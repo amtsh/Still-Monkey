@@ -5,17 +5,17 @@
 
 import Foundation
 
-/// Unified recent row for reels and Duolingo courses. IDs are prefixed to avoid collisions.
+/// Unified recent row for reels and lesson paths. IDs are prefixed to avoid collisions.
 enum HomeRecentItem: Identifiable {
     case reel(RecentContentSnapshot)
-    case duolingo(DuolingoCourseSnapshot)
+    case path(PathCourseSnapshot)
 
     var id: String {
         switch self {
         case let .reel(snapshot):
             return "reel:\(snapshot.id)"
-        case let .duolingo(snapshot):
-            return "duolingo:\(snapshot.id)"
+        case let .path(snapshot):
+            return "path:\(snapshot.id)"
         }
     }
 
@@ -23,7 +23,7 @@ enum HomeRecentItem: Identifiable {
         switch self {
         case let .reel(snapshot):
             return snapshot.updatedAt
-        case let .duolingo(snapshot):
+        case let .path(snapshot):
             return snapshot.updatedAt
         }
     }
@@ -32,54 +32,40 @@ enum HomeRecentItem: Identifiable {
         switch self {
         case let .reel(snapshot):
             return snapshot.displayTopic
-        case let .duolingo(snapshot):
+        case let .path(snapshot):
             return snapshot.displayTopic
         }
     }
 
-    var iconName: String {
+    /// Mode for this row (reel snapshots store mode; paths are always Path).
+    var contentMode: ContentMode {
         switch self {
         case let .reel(snapshot):
-            return snapshot.mode == .story ? "moon.zzz" : "book"
-        case .duolingo:
-            return "point.3.connected.trianglepath.dotted"
+            snapshot.mode
+        case .path:
+            .path
         }
+    }
+
+    /// Matches suggested-topic and composer iconography per mode.
+    var iconName: String {
+        contentMode.suggestedRowIconName
     }
 }
 
 enum HomeRecentFeed {
-    /// Merge and sort once (newest first).
+    /// Max rows shown on the home recent list (reels + paths combined).
+    static let homeDisplayLimit = 10
+
+    /// Merge, sort newest first, and cap for home.
     static func mergedItems(
         reels: [RecentContentSnapshot],
-        courses: [DuolingoCourseSnapshot]
+        courses: [PathCourseSnapshot],
+        limit: Int = homeDisplayLimit
     ) -> [HomeRecentItem] {
         let reelItems = reels.map(HomeRecentItem.reel)
-        let courseItems = courses.map(HomeRecentItem.duolingo)
-        return (reelItems + courseItems).sorted { $0.updatedAt > $1.updatedAt }
-    }
-
-    struct Buckets {
-        let today: [HomeRecentItem]
-        let yesterday: [HomeRecentItem]
-        let earlier: [HomeRecentItem]
-
-        /// Single pass over sorted items — O(n).
-        static func partition(_ items: [HomeRecentItem]) -> Buckets {
-            let calendar = Calendar.current
-            var today: [HomeRecentItem] = []
-            var yesterday: [HomeRecentItem] = []
-            var earlier: [HomeRecentItem] = []
-            today.reserveCapacity(items.count)
-            for item in items {
-                if calendar.isDateInToday(item.updatedAt) {
-                    today.append(item)
-                } else if calendar.isDateInYesterday(item.updatedAt) {
-                    yesterday.append(item)
-                } else {
-                    earlier.append(item)
-                }
-            }
-            return Buckets(today: today, yesterday: yesterday, earlier: earlier)
-        }
+        let courseItems = courses.map(HomeRecentItem.path)
+        let merged = (reelItems + courseItems).sorted { $0.updatedAt > $1.updatedAt }
+        return Array(merged.prefix(limit))
     }
 }

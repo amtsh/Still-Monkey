@@ -18,15 +18,15 @@ enum ContentPromptLibrary {
         }
     }
 
-    static func duolingoCoursePrompt(topic: String) -> ContentPrompt {
+    static func pathCoursePrompt(topic: String) -> ContentPrompt {
         ContentPrompt(
-            systemPrompt: duolingoCourseSystemPrompt,
+            systemPrompt: pathCourseSystemPrompt,
             userPrompt: topic
         )
     }
 
     /// Continuation lessons after the learner has finished the current map (deeper / advanced track).
-    static func duolingoExtendCoursePrompt(
+    static func pathExtendCoursePrompt(
         topic: String,
         courseTitle: String,
         completedLessonLines: [String],
@@ -38,7 +38,7 @@ enum ContentPromptLibrary {
         let existingIDsBlock = existingLessonIDs.joined(separator: ", ")
 
         return ContentPrompt(
-            systemPrompt: duolingoExtendCourseSystemPrompt,
+            systemPrompt: pathExtendCourseSystemPrompt,
             userPrompt: """
             Topic: \(topic)
             Course title: \(courseTitle)
@@ -53,10 +53,10 @@ enum ContentPromptLibrary {
         )
     }
 
-    static func duolingoLessonPrompt(
+    static func pathLessonPrompt(
         topic: String,
         courseTitle: String,
-        lesson: DuolingoLessonSummary,
+        lesson: PathLessonSummary,
         completedLessonTitles: [String]
     ) -> ContentPrompt {
         let completedText = completedLessonTitles.isEmpty
@@ -64,7 +64,7 @@ enum ContentPromptLibrary {
             : completedLessonTitles.joined(separator: ", ")
 
         return ContentPrompt(
-            systemPrompt: duolingoLessonSystemPrompt,
+            systemPrompt: pathLessonSystemPrompt,
             userPrompt: """
             Topic: \(topic)
             Course title: \(courseTitle)
@@ -113,7 +113,7 @@ enum ContentPromptLibrary {
     - Do not include any text outside this format.
     """
 
-    private static let duolingoCourseSystemPrompt = """
+    private static let pathCourseSystemPrompt = """
     You are designing a substantive mobile-first lesson path: each lesson should feel worth studying, with clear scope and progression.
     Return only valid JSON matching this exact shape:
 
@@ -137,7 +137,7 @@ enum ContentPromptLibrary {
     - Do not include markdown, code fences, comments, or any text outside the JSON object.
     """
 
-    private static let duolingoExtendCourseSystemPrompt = """
+    private static let pathExtendCourseSystemPrompt = """
     The learner has already completed every lesson in their current path. You are adding NEW lessons that continue the same course, going deeper or more advanced.
     Return only valid JSON matching this exact shape:
 
@@ -159,8 +159,8 @@ enum ContentPromptLibrary {
     - Do not include markdown, code fences, comments, or any text outside the JSON object.
     """
 
-    private static let duolingoLessonSystemPrompt = """
-    You are generating one Duolingo-style lesson for a mobile micro-learning app.
+    private static let pathLessonSystemPrompt = """
+    You are generating one short, bite-sized lesson for a mobile micro-learning app.
     Return only valid JSON matching this exact shape:
 
     {

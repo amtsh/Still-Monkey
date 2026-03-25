@@ -14,7 +14,6 @@ struct ReelsView: View {
     @State private var currentID: Reel.ID?
     @State private var hasShownSwipeHint = false
     @State private var isRestoringPosition = true
-    @State private var isZenMode = false
 
     private var topicTitle: String {
         let rawTitle = viewModel.topic.isEmpty ? viewModel.contentMode.defaultFeedTitle : viewModel.topic
@@ -42,22 +41,11 @@ struct ReelsView: View {
             if viewModel.isLoading && !viewModel.reels.isEmpty {
                 loadingStrip
             }
-
-            if !viewModel.reels.isEmpty {
-                aiAttribution
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 12)
-                    .allowsHitTesting(false)
-            }
         }
         .animation(reduceMotion ? .default : .spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(isZenMode ? .hidden : .automatic, for: .navigationBar)
-        .onDisappear {
-            isZenMode = false
-        }
+        .deemphasizedReadingNavigationBar()
         .onAppear {
             isRestoringPosition = true
             applyInitialPositionIfNeeded()
@@ -69,14 +57,6 @@ struct ReelsView: View {
                 isRestoringPosition = false
             }
         }
-    }
-
-    private var aiAttribution: some View {
-        Text("Generated for learning — verify important facts.")
-            .font(.caption2)
-            .foregroundStyle(Config.Brand.readableTertiaryText)
-            .multilineTextAlignment(.center)
-            .accessibilityLabel("AI-generated content. Verify important facts.")
     }
 
     // MARK: – Feed
@@ -93,20 +73,12 @@ struct ReelsView: View {
                             totalCount: viewModel.reels.count,
                             chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
                             topicTitle: topicTitle,
-                            showsProgressBar: !isRestoringPosition,
-                            zenModeDimProgress: isZenMode
+                            showsProgressBar: !isRestoringPosition
                         )
 
                         if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
                             SwipeHintOverlay()
                                 .onAppear { hasShownSwipeHint = true }
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        HapticsFeedback.impactSoft()
-                        withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) {
-                            isZenMode.toggle()
                         }
                     }
                     .containerRelativeFrame([.horizontal, .vertical])
@@ -118,6 +90,7 @@ struct ReelsView: View {
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)
+        .clipped()
         .onChange(of: viewModel.reels.map(\.id)) { _, _ in
             isRestoringPosition = true
             applyInitialPositionIfNeeded()
@@ -202,9 +175,9 @@ struct ReelsView: View {
                 }
                 secondaryButton(title: "Back", action: handleBack)
             } else {
-                Image(systemName: viewModel.contentMode == .story ? "book.pages.fill" : "play.rectangle.fill")
+                Image(systemName: viewModel.contentMode.suggestedRowIconName)
                     .font(.system(size: UIIconSize.hero))
-                    .foregroundStyle(.white.opacity(0.15))
+                    .foregroundStyle(viewModel.contentMode.modeAccentColor.opacity(0.85))
                     .accessibilityHidden(true)
                 Text(viewModel.contentMode.emptyStateMessage)
                     .font(.headline)

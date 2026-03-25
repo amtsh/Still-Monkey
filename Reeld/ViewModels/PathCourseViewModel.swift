@@ -3,19 +3,19 @@ import Observation
 
 @Observable
 @MainActor
-final class DuolingoCourseViewModel {
+final class PathCourseViewModel {
     var topic: String = ""
-    var course: DuolingoCourseSnapshot?
+    var course: PathCourseSnapshot?
     var isLoading = false
     var error: String?
-    var recentCourses: [DuolingoCourseSnapshot] = []
+    var recentCourses: [PathCourseSnapshot] = []
     var lastAccessedCourseID: String?
 
     private let service: any OpenRouterServing
     private let userDefaults: UserDefaults
 
-    private static let recentCoursesKey = "duolingoRecentCourses"
-    private static let lastAccessedCourseKey = "duolingoLastAccessedCourseID"
+    private static let recentCoursesKey = "pathRecentCourses"
+    private static let lastAccessedCourseKey = "pathLastAccessedCourseID"
 
     init(
         service: any OpenRouterServing = OpenRouterService(),
@@ -34,6 +34,18 @@ final class DuolingoCourseViewModel {
     /// True when every lesson on the map is completed; user can generate a deeper segment.
     var isPathFullyCompleted: Bool {
         course?.isEntirePathCompleted ?? false
+    }
+
+    /// Clears a stale error and drops the loaded map when switching topics so the UI does not flash the previous failure
+    /// (or wrong course) before `startCourse` runs on the next run loop.
+    func prepareForPathRequest(topic raw: String) {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        error = nil
+        topic = trimmed
+        if let c = course, c.normalizedTopicKey != trimmed.lowercased() {
+            course = nil
+        }
     }
 
     func startCourse(for topic: String, forceRefresh: Bool = false) async {
@@ -59,14 +71,14 @@ final class DuolingoCourseViewModel {
         course = nil
 
         do {
-            let prompt = ContentPromptLibrary.duolingoCoursePrompt(topic: trimmedTopic)
+            let prompt = ContentPromptLibrary.pathCoursePrompt(topic: trimmedTopic)
             let content = try await service.fetchJSONWithRetry(
                 prompt: prompt.userPrompt,
                 systemPrompt: prompt.systemPrompt,
                 apiKey: apiKey,
                 maxTokens: 2000
             )
-            let snapshot = try DuolingoPayloadParser.parseCourseSnapshot(from: content, topic: trimmedTopic)
+            let snapshot = try PathPayloadParser.parseCourseSnapshot(from: content, topic: trimmedTopic)
             loadCourse(snapshot)
         } catch {
             self.error = "Could not build the lesson path. Try again."
@@ -103,7 +115,7 @@ final class DuolingoCourseViewModel {
             .map { "\($0.order). \($0.title) — \($0.summary)" }
 
         do {
-            let prompt = ContentPromptLibrary.duolingoExtendCoursePrompt(
+            let prompt = ContentPromptLibrary.pathExtendCoursePrompt(
                 topic: course.topic,
                 courseTitle: course.courseTitle,
                 completedLessonLines: completedLines,
@@ -115,7 +127,7 @@ final class DuolingoCourseViewModel {
                 apiKey: apiKey,
                 maxTokens: 2200
             )
-            let newLessons = try DuolingoPayloadParser.parseAdditionalLessons(
+            let newLessons = try PathPayloadParser.parseAdditionalLessons(
                 from: content,
                 startingOrder: maxOrder,
                 existingLessonIDs: existingIDs
@@ -138,7 +150,7 @@ final class DuolingoCourseViewModel {
         }
     }
 
-    func loadRecentCourse(_ snapshot: DuolingoCourseSnapshot) {
+    func loadRecentCourse(_ snapshot: PathCourseSnapshot) {
         var updatedSnapshot = snapshot
         updatedSnapshot.updatedAt = .now
         topic = updatedSnapshot.topic
@@ -146,7 +158,7 @@ final class DuolingoCourseViewModel {
         saveCourse(updatedSnapshot)
     }
 
-    func deleteRecentCourse(_ snapshot: DuolingoCourseSnapshot) {
+    func deleteRecentCourse(_ snapshot: PathCourseSnapshot) {
         recentCourses.removeAll { $0.id == snapshot.id }
 
         if lastAccessedCourseID == snapshot.id {
@@ -161,15 +173,15 @@ final class DuolingoCourseViewModel {
         persistRecentCourses()
     }
 
-    func accessState(for lesson: DuolingoLessonSummary) -> DuolingoLessonAccessState {
+    func accessState(for lesson: PathLessonSummary) -> PathLessonAccessState {
         course?.accessState(for: lesson.id) ?? .locked
     }
 
-    func lessonProgress(for lessonID: String) -> DuolingoLessonProgress? {
+    func lessonProgress(for lessonID: String) -> PathLessonProgress? {
         course?.progress(for: lessonID)
     }
 
-    func lessonSummary(for lessonID: String) -> DuolingoLessonSummary? {
+    func lessonSummary(for lessonID: String) -> PathLessonSummary? {
         course?.lessons.first(where: { $0.id == lessonID })
     }
 
@@ -177,13 +189,13 @@ final class DuolingoCourseViewModel {
         course?.nextLessonID(after: lessonID)
     }
 
-    func startOrRestoreLesson(lessonID: String) async throws -> DuolingoLessonProgress {
+    func startOrRestoreLesson(lessonID: String) async throws -> PathLessonProgress {
         guard var course else {
-            throw DuolingoCourseError.missingCourse
+            throw PathCourseError.missingCourse
         }
 
         guard course.accessState(for: lessonID) != .locked else {
-            throw DuolingoCourseError.lessonLocked
+            throw PathCourseError.lessonLocked
         }
 
         if let existing = course.progress(for: lessonID), !existing.reels.isEmpty, !existing.quizQuestions.isEmpty {
@@ -194,17 +206,17 @@ final class DuolingoCourseViewModel {
 
         let apiKey = userDefaults.string(forKey: Config.apiKeyUserDefaultsKey) ?? ""
         guard !apiKey.isEmpty else {
-            throw DuolingoCourseError.missingAPIKey
+            throw PathCourseError.missingAPIKey
         }
 
         guard let lesson = course.lessons.first(where: { $0.id == lessonID }) else {
-            throw DuolingoCourseError.missingLesson
+            throw PathCourseError.missingLesson
         }
 
         let completedTitles = course.lessons
             .filter { course.completedLessonIDs.contains($0.id) }
             .map(\.title)
-        let prompt = ContentPromptLibrary.duolingoLessonPrompt(
+        let prompt = ContentPromptLibrary.pathLessonPrompt(
             topic: course.topic,
             courseTitle: course.courseTitle,
             lesson: lesson,
@@ -217,7 +229,7 @@ final class DuolingoCourseViewModel {
             apiKey: apiKey,
             maxTokens: 3200
         )
-        let progress = try DuolingoPayloadParser.parseLessonProgress(from: content, lesson: lesson)
+        let progress = try PathPayloadParser.parseLessonProgress(from: content, lesson: lesson)
 
         course.currentLessonID = lessonID
         course.upsertLessonProgress(progress)
@@ -285,12 +297,12 @@ final class DuolingoCourseViewModel {
         return result
     }
 
-    private func loadCourse(_ snapshot: DuolingoCourseSnapshot) {
+    private func loadCourse(_ snapshot: PathCourseSnapshot) {
         error = nil
         saveCourse(snapshot)
     }
 
-    private func saveCourse(_ snapshot: DuolingoCourseSnapshot) {
+    private func saveCourse(_ snapshot: PathCourseSnapshot) {
         var updatedSnapshot = snapshot
         updatedSnapshot.updatedAt = .now
 
@@ -303,11 +315,11 @@ final class DuolingoCourseViewModel {
         persistRecentCourses()
     }
 
-    private func loadRecentCourses() -> [DuolingoCourseSnapshot] {
+    private func loadRecentCourses() -> [PathCourseSnapshot] {
         guard let data = userDefaults.data(forKey: Self.recentCoursesKey) else { return [] }
 
         do {
-            let snapshots = try JSONDecoder().decode([DuolingoCourseSnapshot].self, from: data)
+            let snapshots = try JSONDecoder().decode([PathCourseSnapshot].self, from: data)
             return snapshots.sorted(by: { $0.updatedAt > $1.updatedAt })
         } catch {
             return []
@@ -319,7 +331,7 @@ final class DuolingoCourseViewModel {
         userDefaults.set(data, forKey: Self.recentCoursesKey)
     }
 
-    enum DuolingoCourseError: LocalizedError {
+    enum PathCourseError: LocalizedError {
         case missingCourse
         case missingLesson
         case lessonLocked

@@ -10,7 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: TopicViewModel
-    @Bindable var courseViewModel: DuolingoCourseViewModel
+    @Bindable var courseViewModel: PathCourseViewModel
 
     @State private var searchText = ""
     @State private var isEditingHistory = false
@@ -22,18 +22,15 @@ struct HomeView: View {
     var onOpenFeed: (() -> Void)? = nil
     var onOpenCourseMap: (() -> Void)? = nil
     var onStartLearning: (() -> Void)? = nil
+    var onStartSuggestion: ((String, ContentMode) -> Void)? = nil
 
     private var canStart: Bool {
         !(viewModel.isLoading || courseViewModel.isLoading)
             && !viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var mergedRecentItems: [HomeRecentItem] {
+    private var recentItemsForHome: [HomeRecentItem] {
         HomeRecentFeed.mergedItems(reels: viewModel.recentItems, courses: courseViewModel.recentCourses)
-    }
-
-    private var recentBuckets: HomeRecentFeed.Buckets {
-        HomeRecentFeed.Buckets.partition(mergedRecentItems)
     }
 
     var body: some View {
@@ -45,13 +42,9 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
                     HomeHeroCardView()
 
-                    if mergedRecentItems.isEmpty {
-                        emptyRecentHint
-                    }
-
-                    if !mergedRecentItems.isEmpty {
+                    if !recentItemsForHome.isEmpty {
                         HomeRecentSectionsView(
-                            buckets: recentBuckets,
+                            items: recentItemsForHome,
                             isEditingHistory: $isEditingHistory,
                             reduceMotion: reduceMotion,
                             lastAccessedReelID: viewModel.lastAccessedRecentID,
@@ -61,11 +54,15 @@ struct HomeView: View {
                         )
                     }
 
-                    SuggestedTopicsView(viewModel: suggestedViewModel) { topic in
-                        viewModel.contentMode = .learn
+                    SuggestedTopicsView(viewModel: suggestedViewModel) { topic, mode in
+                        viewModel.contentMode = mode
                         viewModel.topic = topic
                         searchText = topic
-                        onStartLearning?()
+                        if let onStartSuggestion {
+                            onStartSuggestion(topic, mode)
+                        } else {
+                            onStartLearning?()
+                        }
                     }
                 }
                 .padding(.horizontal, HomeLayout.scrollHorizontalPadding)
@@ -84,9 +81,15 @@ struct HomeView: View {
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
         .searchFocused(isSearchFocused)
         .onChange(of: searchText) { _, newValue in
-            if viewModel.topic != newValue {
-                viewModel.topic = newValue
+            guard viewModel.topic != newValue else { return }
+            // Programmatic unfocus often clears the search field; don't wipe the topic we just started from.
+            if newValue.isEmpty, !isSearchFocused.wrappedValue {
+                return
             }
+            if newValue.isEmpty, viewModel.isLoading || courseViewModel.isLoading {
+                return
+            }
+            viewModel.topic = newValue
         }
         .onSubmit(of: .search) {
             startLearning()
@@ -122,14 +125,6 @@ struct HomeView: View {
         .preferredColorScheme(.dark)
     }
 
-    private var emptyRecentHint: some View {
-        Text("Your recent topics will appear here after you learn or open a path.")
-            .font(.subheadline)
-            .foregroundStyle(Config.Brand.readableTertiaryText)
-            .fixedSize(horizontal: false, vertical: true)
-            .accessibilityLabel("Your recent topics will appear here after you learn or open a path.")
-    }
-
     private var searchFocusOverlay: some View {
         Rectangle()
             .fill(.ultraThinMaterial)
@@ -153,7 +148,7 @@ struct HomeView: View {
             viewModel.loadRecentSnapshot(snapshot)
             searchText = snapshot.topic
             onOpenFeed?()
-        case let .duolingo(snapshot):
+        case let .path(snapshot):
             viewModel.contentMode = .path
             viewModel.topic = snapshot.topic
             searchText = snapshot.topic
@@ -173,7 +168,7 @@ struct HomeView: View {
         switch item {
         case let .reel(snapshot):
             viewModel.deleteRecentSnapshot(snapshot)
-        case let .duolingo(snapshot):
+        case let .path(snapshot):
             courseViewModel.deleteRecentCourse(snapshot)
         }
 
@@ -182,8 +177,9 @@ struct HomeView: View {
 
     private func startLearning() {
         guard canStart else { return }
-        isSearchFocused.wrappedValue = false
         HapticsFeedback.impactMedium()
         onStartLearning?()
+        isSearchFocused.wrappedValue = false
     }
 }
+

@@ -1,14 +1,14 @@
 import SwiftUI
 
-struct DuolingoLessonSessionView: View {
+struct PathLessonSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var viewModel: DuolingoLessonSessionViewModel
-    @State private var currentPageID: DuolingoLessonSessionViewModel.PageID?
+    @State private var viewModel: PathLessonSessionViewModel
+    @State private var currentPageID: PathLessonSessionViewModel.PageID?
     @State private var hasAppliedInitialPosition = false
     @State private var isPagingReady = false
 
-    init(viewModel: DuolingoLessonSessionViewModel) {
+    init(viewModel: PathLessonSessionViewModel) {
         _viewModel = State(initialValue: viewModel)
     }
 
@@ -39,9 +39,16 @@ struct DuolingoLessonSessionView: View {
                 pagedLesson
             }
         }
-        .navigationTitle(viewModel.lesson?.title ?? "Lesson")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .deemphasizedReadingNavigationBar()
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(viewModel.lesson?.title ?? "Lesson")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.white.opacity(ReadingNavigationChrome.titleOpacity))
+                    .lineLimit(1)
+            }
             if let firstContentPageID = viewModel.firstContentPageID {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
@@ -53,8 +60,8 @@ struct DuolingoLessonSessionView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(
                         currentPageID == firstContentPageID
-                            ? .white.opacity(0.28)
-                            : .white.opacity(0.88)
+                            ? .white.opacity(ReadingNavigationChrome.toolbarActionDisabledOpacity)
+                            : .white.opacity(ReadingNavigationChrome.toolbarActionOpacity)
                     )
                     .disabled(currentPageID == firstContentPageID)
                     .accessibilityLabel("Go to lesson start")
@@ -90,7 +97,14 @@ struct DuolingoLessonSessionView: View {
     }
 
     @ViewBuilder
-    private func page(for pageID: DuolingoLessonSessionViewModel.PageID) -> some View {
+    private func page(for pageID: PathLessonSessionViewModel.PageID) -> some View {
+        ZStack {
+            pageContent(for: pageID)
+        }
+    }
+
+    @ViewBuilder
+    private func pageContent(for pageID: PathLessonSessionViewModel.PageID) -> some View {
         if let reel = viewModel.reel(for: pageID) {
             ReelCardView(
                 reel: reel,
@@ -186,11 +200,11 @@ struct DuolingoLessonSessionView: View {
         }
     }
 
-    private func currentIndexForPage(_ pageID: DuolingoLessonSessionViewModel.PageID) -> Int {
+    private func currentIndexForPage(_ pageID: PathLessonSessionViewModel.PageID) -> Int {
         viewModel.pages.firstIndex(of: pageID) ?? 0
     }
 
-    private func jumpToLessonStart(_ firstContentPageID: DuolingoLessonSessionViewModel.PageID) {
+    private func jumpToLessonStart(_ firstContentPageID: PathLessonSessionViewModel.PageID) {
         withAnimation(reduceMotion ? .none : .spring(response: 0.38, dampingFraction: 0.84)) {
             currentPageID = firstContentPageID
         }

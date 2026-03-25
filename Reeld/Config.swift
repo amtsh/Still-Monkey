@@ -18,6 +18,8 @@ enum Config {
         static let focusColor = Color(red: 0.96, green: 0.72, blue: 0.22)
         static let shortBreakColor = Color.green
         static let longBreakColor = Color(red: 0.68, green: 0.58, blue: 0.94)
+        /// Soft violet for Story mode — calm, relaxing (composer pills, suggested rows).
+        static let storyVioletColor = Color(red: 0.58, green: 0.48, blue: 0.92)
 
         static let backgroundDark = Color(red: 0.05, green: 0.04, blue: 0.07)
         static let backgroundSheet = Color(red: 0.14, green: 0.12, blue: 0.18)
@@ -51,4 +53,29 @@ enum Config {
     }
 
     static let accentColor: Color = Brand.focusColor
+}
+
+extension ContentMode {
+    /// Matches mode pills in `FloatingSearchBar` (Learn / Story / Path).
+    var modeAccentColor: Color {
+        switch self {
+        case .learn:
+            Config.Brand.focusColor
+        case .story:
+            Config.Brand.storyVioletColor
+        case .path:
+            Config.Brand.shortBreakColor
+        }
+    }
+
+    var suggestedRowIconName: String {
+        switch self {
+        case .learn:
+            "book"
+        case .story:
+            "moon.zzz"
+        case .path:
+            "point.3.connected.trianglepath.dotted"
+        }
+    }
 }

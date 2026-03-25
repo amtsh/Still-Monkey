@@ -1,6 +1,6 @@
 import Foundation
 
-enum DuolingoPayloadParser {
+enum PathPayloadParser {
     private enum ParserError: LocalizedError {
         case invalidJSON
         case invalidCourse
@@ -53,12 +53,12 @@ enum DuolingoPayloadParser {
         let explanation: String
     }
 
-    static func parseCourseSnapshot(from content: String, topic: String) throws -> DuolingoCourseSnapshot {
+    static func parseCourseSnapshot(from content: String, topic: String) throws -> PathCourseSnapshot {
         let payload = try decode(CoursePayload.self, from: content)
         let lessons = payload.lessons
             .prefix(8)
             .enumerated()
-            .compactMap { offset, lesson -> DuolingoLessonSummary? in
+            .compactMap { offset, lesson -> PathLessonSummary? in
                 let trimmedTitle = lesson.title.trimmingCharacters(in: .whitespacesAndNewlines)
                 let trimmedSummary = lesson.summary.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedTitle.isEmpty, !trimmedSummary.isEmpty else { return nil }
@@ -66,7 +66,7 @@ enum DuolingoPayloadParser {
                 let idSource = lesson.id?.trimmingCharacters(in: .whitespacesAndNewlines)
                 let lessonID = sanitizeID(idSource?.isEmpty == false ? idSource! : trimmedTitle)
 
-                return DuolingoLessonSummary(
+                return PathLessonSummary(
                     id: lessonID.isEmpty ? "lesson-\(offset + 1)" : lessonID,
                     order: offset + 1,
                     title: trimmedTitle,
@@ -78,7 +78,7 @@ enum DuolingoPayloadParser {
             throw ParserError.invalidCourse
         }
 
-        var uniqueLessons: [DuolingoLessonSummary] = []
+        var uniqueLessons: [PathLessonSummary] = []
         var seenIDs = Set<String>()
         for lesson in lessons {
             guard seenIDs.insert(lesson.id).inserted else { continue }
@@ -89,7 +89,7 @@ enum DuolingoPayloadParser {
             throw ParserError.invalidCourse
         }
 
-        var snapshot = DuolingoCourseSnapshot(
+        var snapshot = PathCourseSnapshot(
             topic: topic.trimmingCharacters(in: .whitespacesAndNewlines),
             courseTitle: payload.courseTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 ? topic.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
@@ -110,10 +110,10 @@ enum DuolingoPayloadParser {
         from content: String,
         startingOrder: Int,
         existingLessonIDs: Set<String>
-    ) throws -> [DuolingoLessonSummary] {
+    ) throws -> [PathLessonSummary] {
         let payload = try decode(ExtendLessonsPayload.self, from: content)
 
-        var uniqueLessons: [DuolingoLessonSummary] = []
+        var uniqueLessons: [PathLessonSummary] = []
         var seenIDs = Set<String>()
 
         for lesson in payload.lessons.prefix(8) {
@@ -137,7 +137,7 @@ enum DuolingoPayloadParser {
 
             let order = startingOrder + uniqueLessons.count + 1
             uniqueLessons.append(
-                DuolingoLessonSummary(
+                PathLessonSummary(
                     id: uniqueID,
                     order: order,
                     title: trimmedTitle,
@@ -155,8 +155,8 @@ enum DuolingoPayloadParser {
 
     static func parseLessonProgress(
         from content: String,
-        lesson: DuolingoLessonSummary
-    ) throws -> DuolingoLessonProgress {
+        lesson: PathLessonSummary
+    ) throws -> PathLessonProgress {
         let payload = try decode(LessonPayload.self, from: content)
 
         var reels: [Reel] = []
@@ -205,7 +205,7 @@ enum DuolingoPayloadParser {
             throw ParserError.invalidLesson
         }
 
-        return DuolingoLessonProgress(
+        return PathLessonProgress(
             lessonID: lesson.id,
             reels: reels.map(StoredReel.init(from:)),
             quizQuestions: quizQuestions,
@@ -219,28 +219,26 @@ enum DuolingoPayloadParser {
     }
 
     private static func decode<T: Decodable>(_ type: T.Type, from content: String) throws -> T {
-        let json = extractJSONObject(from: content)
+        let json = JSONExtraction.extractFirstJSONObject(from: content)
         guard let data = json.data(using: .utf8) else {
             throw ParserError.invalidJSON
         }
 
+        let decoder = JSONDecoder()
         do {
-            return try JSONDecoder().decode(type, from: data)
+            return try decoder.decode(type, from: data)
         } catch {
-            throw ParserError.invalidJSON
+            let snakeDecoder: JSONDecoder = {
+                var d = JSONDecoder()
+                d.keyDecodingStrategy = .convertFromSnakeCase
+                return d
+            }()
+            do {
+                return try snakeDecoder.decode(type, from: data)
+            } catch {
+                throw ParserError.invalidJSON
+            }
         }
-    }
-
-    private static func extractJSONObject(from content: String) -> String {
-        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard
-            let start = trimmed.firstIndex(of: "{"),
-            let end = trimmed.lastIndex(of: "}")
-        else {
-            return trimmed
-        }
-
-        return String(trimmed[start ... end])
     }
 
     private static func sanitizeID(_ value: String) -> String {

@@ -3,7 +3,7 @@ import Observation
 
 @Observable
 @MainActor
-final class DuolingoLessonSessionViewModel {
+final class PathLessonSessionViewModel {
     enum PageID: Hashable {
         case reel(UUID)
         case quiz(String)
@@ -16,15 +16,15 @@ final class DuolingoLessonSessionViewModel {
     var error: String?
     private(set) var latestResult: LessonCompletionResult?
 
-    private let courseViewModel: DuolingoCourseViewModel
+    private let courseViewModel: PathCourseViewModel
     private var hasLoaded = false
 
-    init(courseViewModel: DuolingoCourseViewModel, lessonID: String) {
+    init(courseViewModel: PathCourseViewModel, lessonID: String) {
         self.courseViewModel = courseViewModel
         self.lessonID = lessonID
     }
 
-    var lesson: DuolingoLessonSummary? {
+    var lesson: PathLessonSummary? {
         courseViewModel.lessonSummary(for: lessonID)
     }
 
@@ -56,7 +56,7 @@ final class DuolingoLessonSessionViewModel {
         return pageIDs
     }
 
-    var progress: DuolingoLessonProgress? {
+    var progress: PathLessonProgress? {
         courseViewModel.lessonProgress(for: lessonID)
     }
 
@@ -164,7 +164,7 @@ final class DuolingoLessonSessionViewModel {
         latestResult = courseViewModel.submitQuizAnswers(lessonID: lessonID)
     }
 
-    private func resumeQuestionID(from progress: DuolingoLessonProgress) -> String? {
+    private func resumeQuestionID(from progress: PathLessonProgress) -> String? {
         if let firstUnanswered = progress.firstUnansweredQuestionID {
             return firstUnanswered
         }

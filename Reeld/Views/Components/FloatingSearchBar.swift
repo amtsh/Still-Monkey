@@ -19,15 +19,16 @@ struct FloatingSearchBar: View {
                                 Text(mode.tabLabel)
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(isSelected ? Color.white : Config.Brand.readableSecondaryText)
-                                    .padding(.horizontal, 12)
+                                    .multilineTextAlignment(.center)
                                     .padding(.vertical, 6)
+                                    .frame(width: HomeLayout.modePillWidth)
                                     .background(
                                         Capsule()
-                                            .fill(isSelected ? accentColor(for: mode).opacity(0.22) : Color.clear)
+                                            .fill(isSelected ? mode.modeAccentColor.opacity(0.22) : Color.clear)
                                     )
                                     .overlay(
                                         Capsule()
-                                            .stroke(isSelected ? accentColor(for: mode).opacity(0.55) : Color.white.opacity(0.12), lineWidth: 1)
+                                            .stroke(isSelected ? mode.modeAccentColor.opacity(0.55) : Color.white.opacity(0.12), lineWidth: 1)
                                     )
                                     .glassBackground(in: Capsule(), interactive: true)
                             }
@@ -57,17 +58,6 @@ struct FloatingSearchBar: View {
             if !ContentMode.allCases.contains(viewModel.contentMode) {
                 viewModel.contentMode = .learn
             }
-        }
-    }
-
-    private func accentColor(for mode: ContentMode) -> Color {
-        switch mode {
-        case .learn:
-            return Config.Brand.focusColor
-        case .story:
-            return Config.Brand.accentColor(at: 7)
-        case .path:
-            return Config.Brand.shortBreakColor
         }
     }
 }

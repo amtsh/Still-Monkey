@@ -3,18 +3,21 @@ import SwiftUI
 struct ContentView: View {
     private enum Route: Hashable {
         case reels
-        case duolingoCourse
-        case duolingoLesson(String)
+        case pathCourse
+        case pathLesson(String)
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var viewModel = TopicViewModel()
-    @State private var courseViewModel = DuolingoCourseViewModel()
+    @State private var courseViewModel = PathCourseViewModel()
     @State private var path: [Route] = []
     @State private var isShowingSettings = false
     @State private var generationRequestID: UUID?
-    @State private var duolingoCourseRequestID: UUID?
+    @State private var pathCourseRequestID: UUID?
+    /// Captured when starting path / feed so async work does not see an empty topic after search dismiss clears bindings.
+    @State private var pathCourseStartTopic: String?
+    @State private var feedStartTopic: String?
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
@@ -32,11 +35,15 @@ struct ContentView: View {
                 },
                 onOpenCourseMap: {
                     isSearchFocused = false
-                    showDuolingoCourseIfNeeded()
+                    showPathCourseIfNeeded()
                 },
                 onStartLearning: {
-                    isSearchFocused = false
                     startCurrentMode()
+                    isSearchFocused = false
+                },
+                onStartSuggestion: { topic, mode in
+                    startMode(mode, topic: topic)
+                    isSearchFocused = false
                 }
             )
             .safeAreaInset(edge: .bottom) {
@@ -48,13 +55,13 @@ struct ContentView: View {
                 switch route {
                 case .reels:
                     ReelsView(viewModel: viewModel)
-                case .duolingoCourse:
-                    DuolingoCourseView(viewModel: courseViewModel) { lessonID in
-                        showDuolingoLesson(lessonID)
+                case .pathCourse:
+                    PathCourseView(viewModel: courseViewModel) { lessonID in
+                        showPathLesson(lessonID)
                     }
-                case .duolingoLesson(let lessonID):
-                    DuolingoLessonSessionView(
-                        viewModel: DuolingoLessonSessionViewModel(
+                case .pathLesson(let lessonID):
+                    PathLessonSessionView(
+                        viewModel: PathLessonSessionViewModel(
                             courseViewModel: courseViewModel,
                             lessonID: lessonID
                         )
@@ -70,13 +77,17 @@ struct ContentView: View {
             }
             .task(id: generationRequestID) {
                 guard generationRequestID != nil else { return }
-                await viewModel.generateContent()
+                let topicOverride = feedStartTopic
+                feedStartTopic = nil
+                await viewModel.generateContent(topicOverride: topicOverride)
                 generationRequestID = nil
             }
-            .task(id: duolingoCourseRequestID) {
-                guard duolingoCourseRequestID != nil else { return }
-                await courseViewModel.startCourse(for: viewModel.topic)
-                duolingoCourseRequestID = nil
+            .task(id: pathCourseRequestID) {
+                guard pathCourseRequestID != nil else { return }
+                let topic = pathCourseStartTopic ?? viewModel.topic
+                pathCourseStartTopic = nil
+                await courseViewModel.startCourse(for: topic)
+                pathCourseRequestID = nil
             }
             .onChange(of: viewModel.isLoading) { _, isLoading in
                 if isLoading {
@@ -95,8 +106,8 @@ struct ContentView: View {
         }
     }
 
-    private func showDuolingoCourseIfNeeded() {
-        if let courseIndex = path.firstIndex(of: .duolingoCourse) {
+    private func showPathCourseIfNeeded() {
+        if let courseIndex = path.firstIndex(of: .pathCourse) {
             path = Array(path.prefix(courseIndex + 1))
             return
         }
@@ -105,20 +116,20 @@ struct ContentView: View {
             path.removeAll()
         }
 
-        guard path.last != .duolingoCourse else { return }
+        guard path.last != .pathCourse else { return }
         withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.82)) {
-            path.append(.duolingoCourse)
+            path.append(.pathCourse)
         }
     }
 
-    private func showDuolingoLesson(_ lessonID: String) {
-        if let courseIndex = path.firstIndex(of: .duolingoCourse) {
+    private func showPathLesson(_ lessonID: String) {
+        if let courseIndex = path.firstIndex(of: .pathCourse) {
             path = Array(path.prefix(courseIndex + 1))
         } else {
-            showDuolingoCourseIfNeeded()
+            showPathCourseIfNeeded()
         }
 
-        let route = Route.duolingoLesson(lessonID)
+        let route = Route.pathLesson(lessonID)
         guard path.last != route else { return }
         withAnimation(reduceMotion ? .none : .spring(response: 0.42, dampingFraction: 0.82)) {
             path.append(route)
@@ -126,12 +137,26 @@ struct ContentView: View {
     }
 
     private func startCurrentMode() {
-        switch viewModel.contentMode {
+        startMode(viewModel.contentMode, topic: viewModel.topic)
+    }
+
+    private func startMode(_ mode: ContentMode, topic rawTopic: String) {
+        let trimmed = rawTopic.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        viewModel.contentMode = mode
+        viewModel.topic = trimmed
+
+        switch mode {
         case .learn, .story:
+            viewModel.error = nil
+            feedStartTopic = trimmed
             generationRequestID = UUID()
         case .path:
-            showDuolingoCourseIfNeeded()
-            duolingoCourseRequestID = UUID()
+            pathCourseStartTopic = trimmed
+            courseViewModel.prepareForPathRequest(topic: trimmed)
+            showPathCourseIfNeeded()
+            pathCourseRequestID = UUID()
         }
     }
 }

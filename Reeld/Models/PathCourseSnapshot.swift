@@ -1,24 +1,24 @@
 import Foundation
 
-enum DuolingoLessonAccessState: Equatable {
+enum PathLessonAccessState: Equatable {
     case locked
     case unlocked
     case current
     case completed
 }
 
-struct DuolingoCourseSnapshot: Codable, Identifiable {
+struct PathCourseSnapshot: Codable, Identifiable {
     let topic: String
     let courseTitle: String
-    var lessons: [DuolingoLessonSummary]
+    var lessons: [PathLessonSummary]
     var currentLessonID: String?
     var unlockedLessonIDs: [String]
     var completedLessonIDs: [String]
-    var lessonProgressByID: [String: DuolingoLessonProgress]
+    var lessonProgressByID: [String: PathLessonProgress]
     var updatedAt: Date
 
     var id: String {
-        "duolingo::\(normalizedTopicKey)"
+        "path::\(normalizedTopicKey)"
     }
 
     var normalizedTopicKey: String {
@@ -52,7 +52,7 @@ struct DuolingoCourseSnapshot: Codable, Identifiable {
         return lessons.last?.id
     }
 
-    func progress(for lessonID: String) -> DuolingoLessonProgress? {
+    func progress(for lessonID: String) -> PathLessonProgress? {
         lessonProgressByID[lessonID]
     }
 
@@ -63,7 +63,7 @@ struct DuolingoCourseSnapshot: Codable, Identifiable {
         return lessons[nextIndex].id
     }
 
-    func accessState(for lessonID: String) -> DuolingoLessonAccessState {
+    func accessState(for lessonID: String) -> PathLessonAccessState {
         if completedLessonIDs.contains(lessonID) {
             return .completed
         }
@@ -79,7 +79,7 @@ struct DuolingoCourseSnapshot: Codable, Identifiable {
         return .locked
     }
 
-    mutating func upsertLessonProgress(_ progress: DuolingoLessonProgress) {
+    mutating func upsertLessonProgress(_ progress: PathLessonProgress) {
         lessonProgressByID[progress.lessonID] = progress
         updatedAt = .now
     }

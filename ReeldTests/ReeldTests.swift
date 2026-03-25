@@ -3,6 +3,21 @@ import Testing
 @testable import Reeld
 
 struct ReeldTests {
+    @Test func jsonExtractionDoesNotTruncateWhenBraceAppearsInsideString() throws {
+        let raw = """
+        Preamble
+        {"courseTitle": "C", "lessons": [
+          {"id": "l1", "title": "A", "summary": "s1"},
+          {"id": "l2", "title": "B", "summary": "s2"},
+          {"id": "l3", "title": "C", "summary": "s3"},
+          {"id": "l4", "title": "D", "summary": "Uses } in a sentence"}
+        ]}
+        """
+        let extracted = JSONExtraction.extractFirstJSONObject(from: raw)
+        let snapshot = try PathPayloadParser.parseCourseSnapshot(from: extracted, topic: "T")
+        #expect(snapshot.lessons.contains { $0.summary.contains("}") })
+    }
+
     @Test func parserCreatesChapterAndContentReelsFromValidLines() {
         var parser = ReelContentParser()
         let input = [
@@ -43,6 +58,24 @@ struct ReeldTests {
         for reel in reels.dropFirst() {
             assertContent(reel, chapterIndex: 1, textContains: "")
         }
+    }
+
+    @Test func parserSupportsChapterHeadingVariants() {
+        var parser = ReelContentParser()
+        let input = [
+            "### Chapter 1: Compiler Design",
+            "– Lexing converts source code into a stream of tokens for parsing.",
+            "CHAPTER 2 - Parsing",
+            "— Parsing builds a syntax tree from tokens to represent program structure."
+        ]
+
+        let reels = input.compactMap { parser.parseLine($0) }
+
+        #expect(reels.count == 4)
+        assertChapter(reels[0], index: 1, title: "Compiler Design")
+        assertContent(reels[1], chapterIndex: 1, textContains: "Lexing converts source code")
+        assertChapter(reels[2], index: 2, title: "Parsing")
+        assertContent(reels[3], chapterIndex: 2, textContains: "Parsing builds a syntax tree")
     }
 
     @Test func parserIgnoresBulletsBeforeFirstChapter() {
@@ -99,8 +132,8 @@ struct ReeldTests {
         #expect(prompt?.systemPrompt.contains("Do not include any text outside this format.") == true)
     }
 
-    @Test func duolingoCourseParserUnlocksFirstLessonAndClampsToEightLessons() throws {
-        let snapshot = try DuolingoPayloadParser.parseCourseSnapshot(
+    @Test func pathCourseParserUnlocksFirstLessonAndClampsToEightLessons() throws {
+        let snapshot = try PathPayloadParser.parseCourseSnapshot(
             from: """
             {
               "courseTitle": "Quantum Basics",
@@ -126,25 +159,25 @@ struct ReeldTests {
         #expect(snapshot.currentActionableLessonID == "lesson-1")
     }
 
-    @Test func duolingoCourseParserRejectsMalformedResponses() {
+    @Test func pathCourseParserRejectsMalformedResponses() {
         do {
-            _ = try DuolingoPayloadParser.parseCourseSnapshot(
+            _ = try PathPayloadParser.parseCourseSnapshot(
                 from: "{\"courseTitle\":\"Broken\",\"lessons\":[{\"id\":\"lesson-1\",\"title\":\"Only One\",\"summary\":\"Too short.\"}]}",
                 topic: "Biology"
             )
-            Issue.record("Expected malformed Duolingo course payload to throw.")
+            Issue.record("Expected malformed path course payload to throw.")
         } catch {}
     }
 
-    @Test func duolingoLessonParserBuildsReelsAndQuiz() throws {
-        let lesson = DuolingoLessonSummary(
+    @Test func pathLessonParserBuildsReelsAndQuiz() throws {
+        let lesson = PathLessonSummary(
             id: "lesson-1",
             order: 1,
             title: "Atoms",
             summary: "Start with atomic structure."
         )
 
-        let progress = try DuolingoPayloadParser.parseLessonProgress(
+        let progress = try PathPayloadParser.parseLessonProgress(
             from: """
             {
               "lessonTitle": "Atoms",
@@ -173,11 +206,11 @@ struct ReeldTests {
     }
 
     @MainActor
-    @Test func duolingoPerfectQuizUnlocksExactlyOneNextLesson() {
+    @Test func pathPerfectQuizUnlocksExactlyOneNextLesson() {
         let (defaults, suiteName) = makeTestDefaults()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let viewModel = DuolingoCourseViewModel(
+        let viewModel = PathCourseViewModel(
             service: StubOpenRouterService(),
             userDefaults: defaults
         )
@@ -199,11 +232,11 @@ struct ReeldTests {
     }
 
     @MainActor
-    @Test func duolingoLessonSessionResumesAtSavedReel() {
+    @Test func pathLessonSessionResumesAtSavedReel() {
         let (defaults, suiteName) = makeTestDefaults()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let viewModel = DuolingoCourseViewModel(
+        let viewModel = PathCourseViewModel(
             service: StubOpenRouterService(),
             userDefaults: defaults
         )
@@ -212,23 +245,23 @@ struct ReeldTests {
         progress.lastViewedReelID = savedReelID.uuidString
 
         viewModel.loadRecentCourse(makeCourseSnapshot(progress: progress))
-        let session = DuolingoLessonSessionViewModel(courseViewModel: viewModel, lessonID: "lesson-1")
+        let session = PathLessonSessionViewModel(courseViewModel: viewModel, lessonID: "lesson-1")
 
         let initialPage = session.initialPageID()
 
         if case .some(.reel(let reelID)) = initialPage {
             #expect(reelID == savedReelID)
         } else {
-            Issue.record("Expected Duolingo lesson to resume at saved reel.")
+            Issue.record("Expected path lesson to resume at saved reel.")
         }
     }
 
     @MainActor
-    @Test func duolingoLessonSessionResumesAtFirstUnansweredQuizQuestion() {
+    @Test func pathLessonSessionResumesAtFirstUnansweredQuizQuestion() {
         let (defaults, suiteName) = makeTestDefaults()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let viewModel = DuolingoCourseViewModel(
+        let viewModel = PathCourseViewModel(
             service: StubOpenRouterService(),
             userDefaults: defaults
         )
@@ -237,23 +270,23 @@ struct ReeldTests {
         progress.selectedAnswerIndices["q1"] = 0
 
         viewModel.loadRecentCourse(makeCourseSnapshot(progress: progress))
-        let session = DuolingoLessonSessionViewModel(courseViewModel: viewModel, lessonID: "lesson-1")
+        let session = PathLessonSessionViewModel(courseViewModel: viewModel, lessonID: "lesson-1")
 
         let initialPage = session.initialPageID()
 
         if case .some(.quiz(let questionID)) = initialPage {
             #expect(questionID == "q2")
         } else {
-            Issue.record("Expected Duolingo lesson to resume at the next quiz question.")
+            Issue.record("Expected path lesson to resume at the next quiz question.")
         }
     }
 
     @MainActor
-    @Test func duolingoProgressPersistsAcrossViewModelReload() {
+    @Test func pathProgressPersistsAcrossViewModelReload() {
         let (defaults, suiteName) = makeTestDefaults()
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        let firstViewModel = DuolingoCourseViewModel(
+        let firstViewModel = PathCourseViewModel(
             service: StubOpenRouterService(),
             userDefaults: defaults
         )
@@ -263,7 +296,7 @@ struct ReeldTests {
 
         firstViewModel.loadRecentCourse(makeCourseSnapshot(progress: progress))
 
-        let secondViewModel = DuolingoCourseViewModel(
+        let secondViewModel = PathCourseViewModel(
             service: StubOpenRouterService(),
             userDefaults: defaults
         )
@@ -296,15 +329,15 @@ struct ReeldTests {
     }
 
     @MainActor
-    private func makeCourseSnapshot(progress: DuolingoLessonProgress) -> DuolingoCourseSnapshot {
+    private func makeCourseSnapshot(progress: PathLessonProgress) -> PathCourseSnapshot {
         let lessons = [
-            DuolingoLessonSummary(id: "lesson-1", order: 1, title: "Atoms", summary: "Start with matter."),
-            DuolingoLessonSummary(id: "lesson-2", order: 2, title: "Waves", summary: "See wave behavior."),
-            DuolingoLessonSummary(id: "lesson-3", order: 3, title: "Superposition", summary: "Layer possible states."),
-            DuolingoLessonSummary(id: "lesson-4", order: 4, title: "Entanglement", summary: "Connect distant particles.")
+            PathLessonSummary(id: "lesson-1", order: 1, title: "Atoms", summary: "Start with matter."),
+            PathLessonSummary(id: "lesson-2", order: 2, title: "Waves", summary: "See wave behavior."),
+            PathLessonSummary(id: "lesson-3", order: 3, title: "Superposition", summary: "Layer possible states."),
+            PathLessonSummary(id: "lesson-4", order: 4, title: "Entanglement", summary: "Connect distant particles.")
         ]
 
-        return DuolingoCourseSnapshot(
+        return PathCourseSnapshot(
             topic: "Quantum Mechanics",
             courseTitle: "Quantum Basics",
             lessons: lessons,
@@ -319,7 +352,7 @@ struct ReeldTests {
     private func makeLessonProgress(
         lessonID: String,
         selectedAnswers: [String: Int] = [:]
-    ) -> DuolingoLessonProgress {
+    ) -> PathLessonProgress {
         let reels = [
             Reel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, content: .chapterTitle(index: 1, title: "Inside the atom")),
             Reel(id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!, content: .content(chapterIndex: 1, text: "Atoms contain protons, neutrons, and electrons.")),
@@ -343,7 +376,7 @@ struct ReeldTests {
             )
         ]
 
-        return DuolingoLessonProgress(
+        return PathLessonProgress(
             lessonID: lessonID,
             reels: reels.map(StoredReel.init(from:)),
             quizQuestions: questions,
