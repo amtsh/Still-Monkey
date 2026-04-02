@@ -15,6 +15,8 @@ struct SearchRowView: View {
     var trailingPillAccent: Color? = nil
     /// When true, omits the leading icon (Suggested rows with trailing mode pill only).
     var leadingIconHidden: Bool = false
+    /// When true (Recent history only), row height matches edit mode (44pt content + vertical padding). Suggested rows use the default compact metrics.
+    var recentRowHeight: Bool = false
     var isEditing: Bool = false
     var onTap: () -> Void
     var onDelete: (() -> Void)? = nil
@@ -69,12 +71,27 @@ struct SearchRowView: View {
                 .frame(minWidth: UITouchTarget.minimum, minHeight: UITouchTarget.minimum)
             }
         }
+        .frame(minHeight: UITouchTarget.minimum, alignment: .center)
         .padding(.vertical, HomeLayout.listRowVerticalPadding)
-        .frame(minHeight: HomeLayout.listRowMinHeight, alignment: .center)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @ViewBuilder
     private func rowContent(showChevron: Bool) -> some View {
+        if recentRowHeight {
+            rowContentInner(showChevron: showChevron)
+                .frame(minHeight: UITouchTarget.minimum, alignment: .center)
+                .padding(.vertical, HomeLayout.listRowVerticalPadding)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            rowContentInner(showChevron: showChevron)
+                .padding(.vertical, HomeLayout.listRowVerticalPadding)
+                .frame(minHeight: HomeLayout.listRowMinHeight, alignment: .center)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func rowContentInner(showChevron: Bool) -> some View {
         HStack(spacing: HomeLayout.listRowIconTitleSpacing) {
             if !leadingIconHidden {
                 Image(systemName: iconName)
@@ -84,7 +101,7 @@ struct SearchRowView: View {
             }
 
             Text(title)
-                .font(.body)
+                .font(recentRowHeight ? .body.weight(.medium) : .body)
                 .foregroundStyle(.white.opacity(0.95))
                 .lineLimit(1)
 
@@ -109,9 +126,6 @@ struct SearchRowView: View {
                 }
             }
         }
-        .padding(.vertical, HomeLayout.listRowVerticalPadding)
-        .frame(minHeight: HomeLayout.listRowMinHeight, alignment: .center)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var trailingChevronImage: some View {

@@ -54,6 +54,7 @@ struct HomeRecentSectionsView: View {
             title: item.displayTopic,
             trailingLabel: isLastSeen ? "Last seen" : nil,
             iconForeground: item.contentMode.modeAccentColor,
+            recentRowHeight: true,
             isEditing: isEditingHistory,
             onTap: { onOpen(item) },
             onDelete: isEditingHistory ? { onRequestDelete(item) } : nil
