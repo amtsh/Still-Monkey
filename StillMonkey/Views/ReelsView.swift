@@ -5,11 +5,28 @@
 
 import SwiftUI
 
+private enum ReelFeedItemID: Hashable {
+    case reel(Reel.ID)
+    case learnEnd
+}
+
+private enum ReelFeedItem: Identifiable {
+    case reel(Reel)
+    case learnEnd
+
+    var id: ReelFeedItemID {
+        switch self {
+        case let .reel(r): return .reel(r.id)
+        case .learnEnd: return .learnEnd
+        }
+    }
+}
+
 struct ReelsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let viewModel: TopicViewModel
-    @State private var currentID: Reel.ID?
+    @State private var currentScrollID: ReelFeedItemID?
     @State private var hasShownSwipeHint = false
     @State private var isRestoringPosition = true
     /// Furthest slide index reached this session; used to show “jump to first” only after the user has swiped back from a later slide.
@@ -20,9 +37,28 @@ struct ReelsView: View {
         return rawTitle.trimmingCharacters(in: .whitespacesAndNewlines).localizedCapitalized
     }
 
-    private var currentIndex: Int {
-        guard let id = currentID else { return 0 }
-        return viewModel.reels.firstIndex(where: { $0.id == id }) ?? 0
+    /// Learn mode appends a completion screen after the last reel.
+    private var feedIncludesLearnEnd: Bool {
+        viewModel.contentMode == .learn && !viewModel.reels.isEmpty
+    }
+
+    private var feedItems: [ReelFeedItem] {
+        let reels = viewModel.reels
+        if feedIncludesLearnEnd {
+            return reels.map { .reel($0) } + [.learnEnd]
+        }
+        return reels.map { .reel($0) }
+    }
+
+    /// Index within `feedItems` (including Learn end page when present).
+    private var currentScrollIndex: Int {
+        guard let id = currentScrollID else { return 0 }
+        switch id {
+        case .learnEnd:
+            return max(0, feedItems.count - 1)
+        case let .reel(rid):
+            return viewModel.reels.firstIndex(where: { $0.id == rid }) ?? 0
+        }
     }
 
     var body: some View {
@@ -46,7 +82,7 @@ struct ReelsView: View {
         // Learn + Story: same feed chrome (Path mode uses `PathLessonSessionView`).
         .toolbar {
             if !viewModel.reels.isEmpty {
-                if currentIndex == 0 {
+                if currentScrollIndex == 0 {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
                             HapticsFeedback.impactSoft()
@@ -64,7 +100,7 @@ struct ReelsView: View {
                         .disabled(viewModel.isLoading)
                         .accessibilityLabel("Reload content")
                     }
-                } else if maxVisitedSlideIndex > currentIndex {
+                } else if maxVisitedSlideIndex > currentScrollIndex {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button {
                             jumpToFirstReel()
@@ -85,8 +121,17 @@ struct ReelsView: View {
             revealProgressBarAfterRestore()
             syncMaxVisitedSlideIndex()
         }
-        .onChange(of: currentID) { _, newValue in
-            viewModel.recordCurrentReelID(newValue)
+        .onChange(of: currentScrollID) { _, newValue in
+            switch newValue {
+            case let .reel(id):
+                viewModel.recordCurrentReelID(id)
+            case .learnEnd:
+                if let last = viewModel.reels.last?.id {
+                    viewModel.recordCurrentReelID(last)
+                }
+            case nil:
+                break
+            }
             if isRestoringPosition, newValue != nil {
                 isRestoringPosition = false
             }
@@ -97,32 +142,49 @@ struct ReelsView: View {
     // MARK: – Feed
 
     private var reelsFeed: some View {
-        let reels = viewModel.reels
         let chapterTitlesByIndex = viewModel.chapterTitlesByIndex
+        let items = feedItems
 
-      return ScrollView(.vertical) {
+        return ScrollView(.vertical) {
             LazyVStack(spacing: 0) {
-                ForEach(Array(reels.enumerated()), id: \.element.id) { offset, reel in
-                    ZStack {
-                        ReelCardView(
-                            reel: reel,
-                            currentIndex: currentIndex,
-                            cardIndex: offset,
-                            totalCount: reels.count,
-                            chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
-                            topicTitle: topicTitle,
-                            showsProgressBar: !isRestoringPosition
-                        )
+                ForEach(Array(items.enumerated()), id: \.element.id) { offset, item in
+                    Group {
+                        switch item {
+                        case let .reel(reel):
+                            ZStack {
+                                ReelCardView(
+                                    reel: reel,
+                                    currentIndex: currentScrollIndex,
+                                    cardIndex: offset,
+                                    totalCount: items.count,
+                                    chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
+                                    topicTitle: topicTitle,
+                                    showsProgressBar: !isRestoringPosition
+                                )
 
-                        if offset == 0 && !hasShownSwipeHint && reels.count > 1 {
-                            SwipeHintOverlay()
-                                .onAppear { hasShownSwipeHint = true }
+                                if offset == 0 && !hasShownSwipeHint && items.count > 1 {
+                                    SwipeHintOverlay()
+                                        .onAppear { hasShownSwipeHint = true }
+                                }
+                            }
+                        case .learnEnd:
+                            LearnModeEndScreenView(
+                                topicTitle: topicTitle,
+                                totalSegments: items.count,
+                                currentIndex: currentScrollIndex,
+                                showsProgressBar: !isRestoringPosition,
+                                isLoading: viewModel.isLoading,
+                                onGoDeeper: {
+                                    Task { await viewModel.generateContent(learnDeeper: true) }
+                                },
+                                onDone: handleBack
+                            )
                         }
                     }
                     .containerRelativeFrame([.horizontal, .vertical])
                     .clipShape(Rectangle())
                     .clipped()
-                    .id(reel.id)
+                    .id(item.id)
                 }
             }
             .scrollTargetLayout()
@@ -130,7 +192,7 @@ struct ReelsView: View {
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
-        .scrollPosition(id: $currentID)
+        .scrollPosition(id: $currentScrollID)
         .scrollClipDisabled(false)
         .scrollContentBackground(.hidden)
         .clipShape(Rectangle())
@@ -145,14 +207,14 @@ struct ReelsView: View {
     }
 
     private func syncMaxVisitedSlideIndex() {
-        maxVisitedSlideIndex = max(maxVisitedSlideIndex, currentIndex)
+        maxVisitedSlideIndex = max(maxVisitedSlideIndex, currentScrollIndex)
     }
 
     private func jumpToFirstReel() {
         guard let firstID = viewModel.reels.first?.id else { return }
         HapticsFeedback.impactSoft()
         withAnimation(reduceMotion ? .none : .easeInOut(duration: 0.25)) {
-            currentID = firstID
+            currentScrollID = .reel(firstID)
         }
     }
 
@@ -164,20 +226,25 @@ struct ReelsView: View {
             var transaction = Transaction()
             transaction.animation = nil
             withTransaction(transaction) {
-                currentID = savedID
+                currentScrollID = .reel(savedID)
             }
             return
         }
 
-        if let currentID, viewModel.reels.contains(where: { $0.id == currentID }) {
-            return
+        if let sid = currentScrollID {
+            switch sid {
+            case let .reel(rid):
+                if viewModel.reels.contains(where: { $0.id == rid }) { return }
+            case .learnEnd:
+                if feedIncludesLearnEnd { return }
+            }
         }
 
         if let firstID = viewModel.reels.first?.id {
             var transaction = Transaction()
             transaction.animation = nil
             withTransaction(transaction) {
-                currentID = firstID
+                currentScrollID = .reel(firstID)
             }
         }
     }
@@ -283,5 +350,103 @@ struct ReelsView: View {
 
     private func handleBack() {
         dismiss()
+    }
+}
+
+// MARK: - Learn end screen (Learn mode only)
+
+private struct LearnModeEndScreenView: View {
+    let topicTitle: String
+    let totalSegments: Int
+    let currentIndex: Int
+    let showsProgressBar: Bool
+    let isLoading: Bool
+    let onGoDeeper: () -> Void
+    let onDone: () -> Void
+
+    @State private var didEmitSuccessHaptic = false
+
+    var body: some View {
+        ZStack {
+            AppScreenBackground.standard
+
+            VStack(spacing: 20) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 58, weight: .bold))
+                    .foregroundStyle(Config.Brand.shortBreakColor)
+                    .accessibilityHidden(true)
+
+                Text("End of lesson")
+                    .font(.system(size: 28, weight: .bold))
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .accessibilityAddTraits(.isHeader)
+
+                VStack(spacing: 10) {
+                    Text(topicTitle)
+                        .font(.system(size: ReadingTypography.bodySize, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .multilineTextAlignment(.center)
+
+                    Text(
+                        "You can continue to learn more about this topic by going deeper."
+                    )
+                    .font(.system(size: ReadingTypography.bodySize))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
+                    .lineSpacing(ReadingTypography.bodyLineSpacing)
+                    .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
+
+                VStack(spacing: 12) {
+                    Button {
+                        HapticsFeedback.impactMedium()
+                        onGoDeeper()
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.9)
+                            }
+                            Text(isLoading ? "Loading …" : "Go deeper")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Config.Brand.startButtonFill)
+                    .foregroundStyle(Config.Brand.startButtonTextColor)
+                    .disabled(isLoading)
+                    .accessibilityLabel(isLoading ? "Generating deeper lesson" : "Go deeper on this topic")
+
+                    Button("Close") {
+                        HapticsFeedback.impactSoft()
+                        onDone()
+                    }
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(Config.Brand.readableSecondaryText)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Close, close feed")
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.bottom, showsProgressBar ? 52 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .overlay(alignment: .bottom) {
+            ReelProgressBar(totalSegments: totalSegments, currentIndex: currentIndex)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+                .opacity(showsProgressBar ? 1 : 0)
+                .allowsHitTesting(false)
+        }
+        .accessibilityElement(children: .contain)
+        .onAppear {
+            guard !didEmitSuccessHaptic else { return }
+            didEmitSuccessHaptic = true
+            HapticsFeedback.lessonSuccess()
+        }
     }
 }

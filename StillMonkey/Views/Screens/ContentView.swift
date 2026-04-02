@@ -87,6 +87,9 @@ struct ContentView: View {
                 let topic = pathCourseStartTopic ?? viewModel.topic
                 pathCourseStartTopic = nil
                 await courseViewModel.startCourse(for: topic)
+                if let firstLessonID = courseViewModel.currentActionableLessonID {
+                    _ = try? await courseViewModel.startOrRestoreLesson(lessonID: firstLessonID)
+                }
                 pathCourseRequestID = nil
             }
             .onChange(of: viewModel.isLoading) { _, isLoading in

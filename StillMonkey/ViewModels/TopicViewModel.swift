@@ -21,12 +21,11 @@ final class TopicViewModel {
     var pendingStartReelID: Reel.ID?
 
     var chapterTitlesByIndex: [Int: String] {
-        Dictionary(
-            uniqueKeysWithValues: reels.compactMap { reel in
-                guard case let .chapterTitle(index, title) = reel.content else { return nil }
-                return (index, title)
-            }
-        )
+        let pairs: [(Int, String)] = reels.compactMap { reel in
+            guard case let .chapterTitle(index, title) = reel.content else { return nil }
+            return (index, title)
+        }
+        return Dictionary(pairs, uniquingKeysWith: { _, new in new })
     }
 
     private let service: any OpenRouterServing
@@ -55,11 +54,33 @@ final class TopicViewModel {
     }
 
     /// - Parameter topicOverride: When set (e.g. captured before search UI clears `topic`), used instead of `topic` so generation still runs.
-    func generateContent(topicOverride: String? = nil) async {
+    /// - Parameter learnDeeper: Learn mode only—second pass on the same topic with a deeper prompt; uses current reels’ chapter titles before they are cleared.
+    func generateContent(topicOverride: String? = nil, learnDeeper: Bool = false) async {
         let trimmedTopic = (topicOverride ?? topic).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTopic.isEmpty else { return }
         topic = trimmedTopic
-        guard let prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic) else {
+
+        let priorChapterTitles: [String] = {
+            guard learnDeeper, contentMode == .learn else { return [] }
+            var seen = Set<String>()
+            var titles: [String] = []
+            for reel in reels {
+                if case let .chapterTitle(_, title) = reel.content, seen.insert(title).inserted {
+                    titles.append(title)
+                }
+            }
+            return titles
+        }()
+
+        let prompt: ContentPrompt?
+        if learnDeeper {
+            guard contentMode == .learn else { return }
+            prompt = ContentPromptLibrary.learnDeeperPrompt(topic: trimmedTopic, priorChapterTitles: priorChapterTitles)
+        } else {
+            prompt = ContentPromptLibrary.prompt(for: contentMode, topic: trimmedTopic)
+        }
+
+        guard let prompt else {
             error = "This mode uses the lesson map flow."
             return
         }
@@ -74,12 +95,27 @@ final class TopicViewModel {
         defer { isLoading = false }
 
         var lastError: Error?
+        let appendAsNextChapter = learnDeeper && contentMode == .learn
+        let existingReels = reels
+        let existingMaxChapterIndex = existingReels.map(\.chapterIndex).max() ?? 0
 
         for attempt in 0 ..< LLMRetry.maxAttempts {
-            reels = []
+            let keepExistingReelsVisible = appendAsNextChapter
+
+            var generatedReels: [Reel] = []
+            var localStreamBuffer = ""
+            var localParser = ReelContentParser()
+
+            if keepExistingReelsVisible {
+                generatedReels = []
+                localStreamBuffer = ""
+                localParser.reset()
+            } else {
+                reels = []
+                streamBuffer = ""
+                parser.reset()
+            }
             error = nil
-            streamBuffer = ""
-            parser.reset()
 
             do {
                 let stream = service.stream(
@@ -88,12 +124,49 @@ final class TopicViewModel {
                     apiKey: apiKey
                 )
                 for try await token in stream {
-                    streamBuffer += token
-                    processBuffer()
+                    if keepExistingReelsVisible {
+                        localStreamBuffer += token
+                        processBuffer(
+                            streamBuffer: &localStreamBuffer,
+                            parser: &localParser,
+                            reels: &generatedReels
+                        )
+                    } else {
+                        streamBuffer += token
+                        processBuffer(streamBuffer: &streamBuffer, parser: &parser, reels: &reels)
+                    }
                 }
-                flushBuffer()
-                if !reels.isEmpty {
-                    saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: reels)
+                if keepExistingReelsVisible {
+                    flushBuffer(
+                        streamBuffer: &localStreamBuffer,
+                        parser: &localParser,
+                        reels: &generatedReels
+                    )
+                } else {
+                    flushBuffer(streamBuffer: &streamBuffer, parser: &parser, reels: &reels)
+                }
+
+                let finalReels: [Reel]
+                let firstNewReelID: Reel.ID?
+                if keepExistingReelsVisible {
+                    let shiftedGenerated = reelsWithShiftedChapterIndices(
+                        generatedReels,
+                        chapterOffset: existingMaxChapterIndex
+                    )
+                    finalReels = existingReels + shiftedGenerated
+                    firstNewReelID = shiftedGenerated.first?.id
+                } else {
+                    finalReels = reels
+                    firstNewReelID = nil
+                }
+
+                let hasUsableOutput = keepExistingReelsVisible ? !generatedReels.isEmpty : !finalReels.isEmpty
+                if hasUsableOutput {
+                    if keepExistingReelsVisible {
+                        reels = finalReels
+                        pendingStartReelID = firstNewReelID
+                    }
+                    saveRecentSnapshot(topic: trimmedTopic, mode: contentMode, reels: finalReels)
                     HapticsFeedback.generationSucceeded()
                     return
                 }
@@ -167,19 +240,31 @@ final class TopicViewModel {
         return "Could not load content after retrying. Please check your connection and try again."
     }
 
-    private func processBuffer() {
+    private func processBuffer(streamBuffer: inout String, parser: inout ReelContentParser, reels: inout [Reel]) {
         let lines = streamBuffer.components(separatedBy: "\n")
         guard lines.count > 1 else { return }
         for line in lines.dropLast() {
-            processLine(line)
+            processLine(line, parser: &parser, reels: &reels)
         }
         streamBuffer = lines.last ?? ""
     }
 
-    private func flushBuffer() {
+    private func flushBuffer(streamBuffer: inout String, parser: inout ReelContentParser, reels: inout [Reel]) {
         guard !streamBuffer.isEmpty else { return }
-        processLine(streamBuffer)
+        processLine(streamBuffer, parser: &parser, reels: &reels)
         streamBuffer = ""
+    }
+
+    private func reelsWithShiftedChapterIndices(_ reels: [Reel], chapterOffset: Int) -> [Reel] {
+        guard chapterOffset > 0 else { return reels }
+        return reels.map { reel in
+            switch reel.content {
+            case let .chapterTitle(index, title):
+                return Reel(id: reel.id, content: .chapterTitle(index: index + chapterOffset, title: title))
+            case let .content(chapterIndex, text):
+                return Reel(id: reel.id, content: .content(chapterIndex: chapterIndex + chapterOffset, text: text))
+            }
+        }
     }
 
     func loadRecentSnapshot(_ snapshot: RecentContentSnapshot) {
@@ -279,7 +364,7 @@ final class TopicViewModel {
         }
     }
 
-    private func processLine(_ line: String) {
+    private func processLine(_ line: String, parser: inout ReelContentParser, reels: inout [Reel]) {
         guard let reel = parser.parseLine(line) else { return }
         reels.append(reel)
     }

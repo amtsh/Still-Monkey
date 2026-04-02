@@ -171,35 +171,45 @@ enum PathPayloadParser {
             reels.append(contentsOf: cards.map { Reel(content: .content(chapterIndex: chapterIndex, text: $0)) })
         }
 
-        let quizQuestions = payload.quiz
-            .prefix(4)
-            .compactMap { question -> QuizQuestion? in
-                let prompt = question.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                let explanation = question.explanation.trimmingCharacters(in: .whitespacesAndNewlines)
-                let choices = question.choices
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
+        var quizQuestions: [QuizQuestion] = []
+        var seenQuizIDs = Set<String>()
+        for question in payload.quiz.prefix(4) {
+            let prompt = question.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+            let explanation = question.explanation.trimmingCharacters(in: .whitespacesAndNewlines)
+            let choices = question.choices
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
 
-                guard
-                    !prompt.isEmpty,
-                    !explanation.isEmpty,
-                    (2 ... 4).contains(choices.count),
-                    choices.indices.contains(question.correctAnswerIndex)
-                else {
-                    return nil
-                }
+            guard
+                !prompt.isEmpty,
+                !explanation.isEmpty,
+                (2 ... 4).contains(choices.count),
+                choices.indices.contains(question.correctAnswerIndex)
+            else {
+                continue
+            }
 
-                let rawID = question.id?.trimmingCharacters(in: .whitespacesAndNewlines)
-                let questionID = sanitizeID(rawID?.isEmpty == false ? rawID! : prompt)
+            let rawID = question.id?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let sanitized = sanitizeID(rawID?.isEmpty == false ? rawID! : prompt)
+            var baseID = sanitized.isEmpty ? UUID().uuidString : sanitized
+            var uniqueID = baseID
+            var n = 0
+            while seenQuizIDs.contains(uniqueID) {
+                n += 1
+                uniqueID = "\(baseID)-\(n)"
+            }
+            seenQuizIDs.insert(uniqueID)
 
-                return QuizQuestion(
-                    id: questionID.isEmpty ? UUID().uuidString : questionID,
+            quizQuestions.append(
+                QuizQuestion(
+                    id: uniqueID,
                     prompt: prompt,
                     choices: choices,
                     correctAnswerIndex: question.correctAnswerIndex,
                     explanation: explanation
                 )
-            }
+            )
+        }
 
         guard !reels.isEmpty, quizQuestions.count >= 2 else {
             throw ParserError.invalidLesson

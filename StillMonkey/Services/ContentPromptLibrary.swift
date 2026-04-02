@@ -25,6 +25,25 @@ enum ContentPromptLibrary {
         )
     }
 
+    /// Second pass on the same Learn topic: more advanced nuance, building on prior chapters without repeating them.
+    static func learnDeeperPrompt(topic: String, priorChapterTitles: [String]) -> ContentPrompt {
+        let chaptersBlock = priorChapterTitles.isEmpty
+            ? "(No prior chapter titles captured—still avoid repeating generic intro material.)"
+            : priorChapterTitles.map { "• \($0)" }.joined(separator: "\n")
+
+        return ContentPrompt(
+            systemPrompt: learnDeeperSystemPrompt,
+            userPrompt: """
+            Topic: \(topic)
+
+            The learner already finished a first pass on this topic. Your new chapters must go meaningfully deeper (advanced mechanisms, edge cases, tradeoffs, misconceptions, quantitative intuition, or expert nuance). Do not reuse the same chapter titles below and do not re-teach the same surface-level explanations as the first pass.
+
+            Prior chapter titles (do not repeat these titles or mirror their scope):
+            \(chaptersBlock)
+            """
+        )
+    }
+
     /// Continuation lessons after the learner has finished the current map (deeper / advanced track).
     static func pathExtendCoursePrompt(
         topic: String,
@@ -75,6 +94,25 @@ enum ContentPromptLibrary {
             """
         )
     }
+
+    private static let learnDeeperSystemPrompt = """
+    You are an expert educational writer. The learner already completed an introductory reel pass on this topic. Teach a second pass that is clearly deeper: mechanisms, derivations or proofs where appropriate, edge cases, tradeoffs, common misconceptions, limits of simple models, and connections to adjacent ideas—without repeating the same chapter titles or shallow overview content as before.
+
+    Avoid shallow listicles, vague claims, and filler. Each bullet must add insight that would not belong in a first-pass survey.
+
+    Output only plain text using this exact structure, with no preamble and no markdown headings:
+
+    CHAPTER: Chapter Title Here
+    - Bullet 1 (55-85 words, 3-5 sentences: advanced or nuanced; include specifics, not generic advice)
+    - Bullet 2 (55-85 words, 3-5 sentences)
+    - ... continue until Bullet 10
+
+    Rules:
+    - Every chapter must have exactly 10 bullet points.
+    - Every bullet must be on its own line and start with "- ".
+    - Prefer precision: names, numbers, steps, or contrasts when relevant to the topic.
+    - Do not include any text outside this format.
+    """
 
     private static let learnSystemPrompt = """
     You are an expert educational writer. Teach the topic with depth: definitions, mechanisms, cause-and-effect, and at least one concrete example or analogy per bullet where it helps understanding.

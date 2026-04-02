@@ -41,12 +41,11 @@ final class PathLessonSessionViewModel {
     }
 
     var chapterTitlesByIndex: [Int: String] {
-        Dictionary(
-            uniqueKeysWithValues: reels.compactMap { reel in
-                guard case let .chapterTitle(index, title) = reel.content else { return nil }
-                return (index, title)
-            }
-        )
+        let pairs: [(Int, String)] = reels.compactMap { reel in
+            guard case let .chapterTitle(index, title) = reel.content else { return nil }
+            return (index, title)
+        }
+        return Dictionary(pairs, uniquingKeysWith: { _, new in new })
     }
 
     var pages: [PageID] {
