@@ -229,7 +229,7 @@ enum PathPayloadParser {
             return try decoder.decode(type, from: data)
         } catch {
             let snakeDecoder: JSONDecoder = {
-                var d = JSONDecoder()
+              let d = JSONDecoder()
                 d.keyDecodingStrategy = .convertFromSnakeCase
                 return d
             }()

@@ -99,9 +99,17 @@ struct PathLessonSessionView: View {
 
     private var pagedLesson: some View {
         ScrollView(.vertical) {
+            let pages = viewModel.pages
+            let chapterTitlesByIndex = viewModel.chapterTitlesByIndex
+
             LazyVStack(spacing: 0) {
-                ForEach(viewModel.pages, id: \.self) { pageID in
-                    page(for: pageID)
+                ForEach(Array(pages.enumerated()), id: \.element) { pageIndex, pageID in
+                    page(
+                        for: pageID,
+                        pageIndex: pageIndex,
+                        totalPageCount: pages.count,
+                        chapterTitlesByIndex: chapterTitlesByIndex
+                    )
                         .containerRelativeFrame([.horizontal, .vertical])
                         .clipShape(Rectangle())
                         .clipped()
@@ -110,6 +118,7 @@ struct PathLessonSessionView: View {
             }
             .scrollTargetLayout()
         }
+        .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentPageID)
@@ -119,21 +128,36 @@ struct PathLessonSessionView: View {
         .clipped()
     }
 
-    private func page(for pageID: PathLessonSessionViewModel.PageID) -> some View {
+    private func page(
+        for pageID: PathLessonSessionViewModel.PageID,
+        pageIndex: Int,
+        totalPageCount: Int,
+        chapterTitlesByIndex: [Int: String]
+    ) -> some View {
         ZStack {
-            pageContent(for: pageID)
+            pageContent(
+                for: pageID,
+                pageIndex: pageIndex,
+                totalPageCount: totalPageCount,
+                chapterTitlesByIndex: chapterTitlesByIndex
+            )
         }
     }
 
     @ViewBuilder
-    private func pageContent(for pageID: PathLessonSessionViewModel.PageID) -> some View {
+    private func pageContent(
+        for pageID: PathLessonSessionViewModel.PageID,
+        pageIndex: Int,
+        totalPageCount: Int,
+        chapterTitlesByIndex: [Int: String]
+    ) -> some View {
         if let reel = viewModel.reel(for: pageID) {
             ReelCardView(
                 reel: reel,
                 currentIndex: currentIndex,
-                cardIndex: currentIndexForPage(pageID),
-                totalCount: viewModel.pages.count,
-                chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
+                cardIndex: pageIndex,
+                totalCount: totalPageCount,
+                chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
                 topicTitle: viewModel.topicTitle,
                 showsProgressBar: true
             )
@@ -220,10 +244,6 @@ struct PathLessonSessionView: View {
             await Task.yield()
             isPagingReady = true
         }
-    }
-
-    private func currentIndexForPage(_ pageID: PathLessonSessionViewModel.PageID) -> Int {
-        viewModel.pages.firstIndex(of: pageID) ?? 0
     }
 
     private func syncMaxVisitedSlideIndex() {

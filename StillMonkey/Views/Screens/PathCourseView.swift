@@ -18,6 +18,7 @@ struct PathCourseView: View {
                     .padding(.top, 14)
                     .padding(.bottom, 24)
                 }
+                .scrollEdgeEffectStyle(.soft, for: .top)
                 .onAppear {
                     autoScrollIfNeeded(with: proxy)
                 }
@@ -153,6 +154,7 @@ struct PathCourseView: View {
 
     private func lessonNode(_ lesson: PathLessonSummary, isLast: Bool) -> some View {
         let state = viewModel.accessState(for: lesson)
+        let progress = viewModel.lessonProgress(for: lesson.id)
         let horizontalOffset = pathOffset(for: lesson.order)
 
         return VStack(spacing: 0) {
@@ -197,7 +199,7 @@ struct PathCourseView: View {
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.68))
 
-                    Text(statusLabel(for: lesson, state: state))
+                    Text(statusLabel(progress: progress, state: state))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(statusColor(for: state))
                         .padding(.horizontal, 10)
@@ -365,19 +367,19 @@ struct PathCourseView: View {
         }
     }
 
-    private func statusLabel(for lesson: PathLessonSummary, state: PathLessonAccessState) -> String {
+    private func statusLabel(progress: PathLessonProgress?, state: PathLessonAccessState) -> String {
         switch state {
         case .locked:
             return "Locked"
         case .completed:
             return "Completed"
         case .current:
-            if viewModel.lessonProgress(for: lesson.id) != nil {
+            if progress != nil {
                 return "Continue"
             }
             return "Start lesson"
         case .unlocked:
-            if viewModel.lessonProgress(for: lesson.id) != nil {
+            if progress != nil {
                 return "Continue"
             }
             return "Unlocked"

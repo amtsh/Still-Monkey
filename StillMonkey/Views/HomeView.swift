@@ -50,20 +50,14 @@ struct HomeView: View {
                     }
 
                     SuggestedTopicsView(viewModel: suggestedViewModel) { topic, mode in
-                        viewModel.contentMode = mode
-                        viewModel.topic = topic
-                        searchText = topic
-                        if let onStartSuggestion {
-                            onStartSuggestion(topic, mode)
-                        } else {
-                            onStartLearning?()
-                        }
+                        handleSuggestionSelection(topic, mode: mode)
                     }
                 }
                 .padding(.horizontal, HomeLayout.scrollHorizontalPadding)
                 .padding(.top, HomeLayout.scrollTopPadding)
                 .padding(.bottom, HomeLayout.scrollBottomPadding)
             }
+            .scrollEdgeEffectStyle(.soft, for: .top)
             .scrollDisabled(isSearchFocused.wrappedValue)
 
             if isSearchFocused.wrappedValue {
@@ -122,17 +116,16 @@ struct HomeView: View {
     }
 
     private var searchFocusOverlay: some View {
-        Rectangle()
-            .fill(.ultraThinMaterial)
-            .overlay(Color.black.opacity(0.38))
-            .ignoresSafeArea()
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isSearchFocused.wrappedValue = false
-            }
-            .transition(.opacity)
-            .accessibilityAddTraits(.isButton)
-            .accessibilityLabel("Dismiss search")
+        Button(action: dismissSearch) {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .overlay(Color.black.opacity(0.38))
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .transition(.opacity)
+        .accessibilityLabel("Dismiss search")
     }
 
     private func openRecent(_ item: HomeRecentItem) {
@@ -177,5 +170,20 @@ struct HomeView: View {
         onStartLearning?()
         isSearchFocused.wrappedValue = false
     }
-}
 
+    private func dismissSearch() {
+        isSearchFocused.wrappedValue = false
+    }
+
+    private func handleSuggestionSelection(_ topic: String, mode: ContentMode) {
+        viewModel.contentMode = mode
+        viewModel.topic = topic
+        searchText = topic
+
+        if let onStartSuggestion {
+            onStartSuggestion(topic, mode)
+        } else {
+            onStartLearning?()
+        }
+    }
+}

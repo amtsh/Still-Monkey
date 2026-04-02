@@ -97,21 +97,24 @@ struct ReelsView: View {
     // MARK: – Feed
 
     private var reelsFeed: some View {
-        ScrollView(.vertical) {
+        let reels = viewModel.reels
+        let chapterTitlesByIndex = viewModel.chapterTitlesByIndex
+
+      return ScrollView(.vertical) {
             LazyVStack(spacing: 0) {
-                ForEach(Array(viewModel.reels.enumerated()), id: \.element.id) { offset, reel in
+                ForEach(Array(reels.enumerated()), id: \.element.id) { offset, reel in
                     ZStack {
                         ReelCardView(
                             reel: reel,
                             currentIndex: currentIndex,
                             cardIndex: offset,
-                            totalCount: viewModel.reels.count,
-                            chapterTitle: viewModel.chapterTitlesByIndex[reel.chapterIndex],
+                            totalCount: reels.count,
+                            chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
                             topicTitle: topicTitle,
                             showsProgressBar: !isRestoringPosition
                         )
 
-                        if offset == 0 && !hasShownSwipeHint && viewModel.reels.count > 1 {
+                        if offset == 0 && !hasShownSwipeHint && reels.count > 1 {
                             SwipeHintOverlay()
                                 .onAppear { hasShownSwipeHint = true }
                         }
@@ -124,6 +127,7 @@ struct ReelsView: View {
             }
             .scrollTargetLayout()
         }
+        .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollTargetBehavior(.paging)
         .scrollIndicators(.hidden)
         .scrollPosition(id: $currentID)

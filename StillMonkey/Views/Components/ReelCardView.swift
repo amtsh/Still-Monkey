@@ -1,8 +1,12 @@
 import SwiftUI
 
+private enum ReelCardPalette {
+    static let chapterAccents = stride(from: 1, through: 9, by: 2).map { Config.Brand.accentColor(at: $0) }
+}
+
 private func chapterAccent(for chapterIndex: Int) -> Color {
-        let palette = stride(from: 1, through: 9, by: 2).map { Config.Brand.accentColor(at: $0) }
-        return palette[max(0, chapterIndex - 1) % palette.count]
+    let palette = ReelCardPalette.chapterAccents
+    return palette[max(0, chapterIndex - 1) % palette.count]
 }
 
 struct ReelCardView: View {
@@ -127,11 +131,14 @@ private struct ContentCard: View {
     let chapterIndex: Int
     let chapterTitle: String?
     let topicTitle: String
-    let text: String
+    private let sentenceParagraphs: [String]
     @State private var appeared = false
 
-    private var sentenceParagraphs: [String] {
-        sentences(from: text)
+    init(chapterIndex: Int, chapterTitle: String?, topicTitle: String, text: String) {
+        self.chapterIndex = chapterIndex
+        self.chapterTitle = chapterTitle
+        self.topicTitle = topicTitle
+        sentenceParagraphs = sentences(from: text)
     }
 
     var body: some View {
@@ -140,8 +147,8 @@ private struct ContentCard: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: 28) {
-                    ForEach(Array(sentenceParagraphs.enumerated()), id: \.offset) { _, sentence in
-                        Text(sentence)
+                    ForEach(sentenceParagraphs.indices, id: \.self) { index in
+                        Text(sentenceParagraphs[index])
                             .font(.system(size: ReadingTypography.bodySize))
                             .foregroundStyle(Color.white.opacity(0.88))
                             .lineSpacing(ReadingTypography.bodyLineSpacing)
