@@ -32,6 +32,10 @@ final class PathLessonSessionViewModel {
         courseViewModel.course?.displayTopic ?? ""
     }
 
+    var courseTitle: String? {
+        courseViewModel.course?.courseTitle
+    }
+
     var reels: [Reel] {
         progress?.hydratedReels ?? []
     }

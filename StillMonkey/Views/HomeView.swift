@@ -9,6 +9,7 @@ struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: TopicViewModel
     @Bindable var courseViewModel: PathCourseViewModel
+    @Bindable var bookmarkStore: BookmarkStore
 
     @State private var searchText = ""
     @State private var isEditingHistory = false
@@ -19,6 +20,7 @@ struct HomeView: View {
     var onOpenFeed: (() -> Void)? = nil
     var onOpenCourseMap: (() -> Void)? = nil
     var onStartLearning: (() -> Void)? = nil
+    var onOpenBookmark: ((UUID) -> Void)? = nil
 
     private var canStart: Bool {
         !(viewModel.isLoading || courseViewModel.isLoading)
@@ -46,6 +48,18 @@ struct HomeView: View {
                             lastAccessedCourseID: courseViewModel.lastAccessedCourseID,
                             onOpen: openRecent,
                             onRequestDelete: requestDeleteRecent
+                        )
+                    }
+
+                    if !bookmarkStore.entries.isEmpty {
+                        HomeBookmarksSectionView(
+                            entries: bookmarkStore.entries,
+                            onOpen: { entry in
+                                onOpenBookmark?(entry.id)
+                            },
+                            onRemove: { entry in
+                                bookmarkStore.remove(id: entry.id)
+                            }
                         )
                     }
                 }

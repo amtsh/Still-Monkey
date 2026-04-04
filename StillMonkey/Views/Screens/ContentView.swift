@@ -5,12 +5,14 @@ struct ContentView: View {
         case reels
         case pathCourse
         case pathLesson(String)
+        case bookmark(UUID)
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var viewModel = TopicViewModel()
     @State private var courseViewModel = PathCourseViewModel()
+    @State private var bookmarkStore = BookmarkStore()
     @State private var path: [Route] = []
     @State private var isShowingSettings = false
     @State private var generationRequestID: UUID?
@@ -25,6 +27,7 @@ struct ContentView: View {
             HomeView(
                 viewModel: viewModel,
                 courseViewModel: courseViewModel,
+                bookmarkStore: bookmarkStore,
                 isSearchFocused: $isSearchFocused,
                 onOpenSettings: {
                     isShowingSettings = true
@@ -40,6 +43,10 @@ struct ContentView: View {
                 onStartLearning: {
                     startCurrentMode()
                     isSearchFocused = false
+                },
+                onOpenBookmark: { id in
+                    isSearchFocused = false
+                    showBookmarkIfNeeded(id)
                 }
             )
             .safeAreaInset(edge: .bottom) {
@@ -50,7 +57,7 @@ struct ContentView: View {
             .navigationDestination(for: Route.self) { route in
                 switch route {
                 case .reels:
-                    ReelsView(viewModel: viewModel)
+                    ReelsView(viewModel: viewModel, bookmarkStore: bookmarkStore)
                 case .pathCourse:
                     PathCourseView(viewModel: courseViewModel) { lessonID in
                         showPathLesson(lessonID)
@@ -60,8 +67,11 @@ struct ContentView: View {
                         viewModel: PathLessonSessionViewModel(
                             courseViewModel: courseViewModel,
                             lessonID: lessonID
-                        )
+                        ),
+                        bookmarkStore: bookmarkStore
                     )
+                case .bookmark(let id):
+                    bookmarkDestination(for: id)
                 }
             }
             .sheet(isPresented: $isShowingSettings) {
@@ -118,6 +128,43 @@ struct ContentView: View {
         guard path.last != .pathCourse else { return }
         withAnimation(reduceMotion ? .none : .spring(response: 0.45, dampingFraction: 0.82)) {
             path.append(.pathCourse)
+        }
+    }
+
+    @ViewBuilder
+    private func bookmarkDestination(for id: UUID) -> some View {
+        if let entry = bookmarkStore.entries.first(where: { $0.id == id }) {
+            BookmarkedContentView(entry: entry) {
+                if case .bookmark(let bid) = path.last, bid == entry.id {
+                    path.removeLast()
+                }
+                bookmarkStore.remove(id: entry.id)
+            }
+        } else {
+            AppScreenCanvas(wash: .none) {
+                VStack(spacing: 16) {
+                    Image(systemName: "bookmark.slash")
+                        .font(.system(size: 44, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.35))
+                    Text("This bookmark is no longer available.")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(Config.Brand.readableSecondaryText)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .appBlendedNavigationBar()
+        }
+    }
+
+    private func showBookmarkIfNeeded(_ id: UUID) {
+        let route = Route.bookmark(id)
+        guard path.last != route else { return }
+        withAnimation(reduceMotion ? .none : .spring(response: 0.42, dampingFraction: 0.82)) {
+            path.append(route)
         }
     }
 

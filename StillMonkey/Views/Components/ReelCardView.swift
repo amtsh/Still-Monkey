@@ -17,12 +17,13 @@ struct ReelCardView: View {
     let chapterTitle: String?
     let topicTitle: String
     let showsProgressBar: Bool
+    var progressAccent: Color
 
     var body: some View {
         GeometryReader { proxy in
             cardContent
                 .overlay(alignment: .bottom) {
-                    ReelProgressBar(totalSegments: totalCount, currentIndex: currentIndex)
+                    ReelProgressBar(totalSegments: totalCount, currentIndex: currentIndex, progressAccent: progressAccent)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
                         .offset(y: reelBarOffset(for: proxy))

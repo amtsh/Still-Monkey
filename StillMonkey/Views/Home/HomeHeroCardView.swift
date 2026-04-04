@@ -13,15 +13,13 @@ struct HomeHeroCardView: View {
             return "Good morning"
         case 12 ..< 17:
             return "Good afternoon"
-        case 17 ..< 22:
-            return "Good evening"
         default:
-            return "Good night"
+            return "Good evening"
         }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(greeting)
                 .font(.largeTitle.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.82))

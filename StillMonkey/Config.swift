@@ -13,10 +13,12 @@ enum Config {
     static let openRouterModel = "x-ai/grok-4.1-fast"
     static let apiKeyUserDefaultsKey = "openRouterAPIKey"
 
-    /// Spotify-inspired: true black canvas, green accent, flat card surfaces.
+    /// Spotify-inspired: true black canvas, flat card surfaces.
     enum Brand {
-        /// Spotify green — primary accent (Learn mode, tint, CTAs).
-        static let focusColor = Color(red: 0.114, green: 0.725, blue: 0.329)
+        /// Learn mode — yellow (pills, book icon, feed tint).
+        static let learnAccentColor = Color(red: 1.0, green: 0.82, blue: 0.04)
+        /// Primary brand accent; matches Learn yellow.
+        static let focusColor = learnAccentColor
         static let shortBreakColor = Color.green
         static let longBreakColor = Color(red: 0.68, green: 0.58, blue: 0.94)
         /// Soft violet for Story mode — calm, relaxing (composer pills, list rows).
@@ -43,7 +45,7 @@ enum Config {
 
         static let accentColorOptions: [Color] = [
             Color(red: 1.0, green: 0.42, blue: 0.322),
-            Color(red: 0.114, green: 0.725, blue: 0.329),
+            learnAccentColor,
             Color(red: 0.18, green: 0.80, blue: 0.44),
             Color(red: 0.20, green: 0.78, blue: 0.75),
             Color(red: 0.35, green: 0.68, blue: 0.98),
@@ -64,11 +66,11 @@ enum Config {
 }
 
 extension ContentMode {
-    /// Matches mode pills in `FloatingSearchBar` (Learn / Story / Path).
+    /// Matches mode pills in `FloatingSearchBar` (Path / Story / Learn).
     var modeAccentColor: Color {
         switch self {
         case .learn:
-            Config.Brand.focusColor
+            Config.Brand.learnAccentColor
         case .story:
             Config.Brand.storyVioletColor
         case .path:

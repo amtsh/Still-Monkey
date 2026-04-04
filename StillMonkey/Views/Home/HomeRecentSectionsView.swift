@@ -112,7 +112,7 @@ struct HomeRecentSectionsView: View {
                 if isLastSeen {
                     Text("Last seen")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(Config.Brand.focusColor)
+                        .foregroundStyle(item.contentMode.modeAccentColor)
                 }
 
                 Text(item.displayTopic)

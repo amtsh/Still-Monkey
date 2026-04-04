@@ -26,6 +26,7 @@ struct ReelsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let viewModel: TopicViewModel
+    let bookmarkStore: BookmarkStore
     @State private var currentScrollID: ReelFeedItemID?
     @State private var hasShownSwipeHint = false
     @State private var isRestoringPosition = true
@@ -61,6 +62,73 @@ struct ReelsView: View {
         }
     }
 
+    private var bookmarkEntryForCurrentPage: BookmarkEntry? {
+        guard !viewModel.reels.isEmpty else { return nil }
+        let chapterTitles = viewModel.chapterTitlesByIndex
+        let items = feedItems
+        let rawTopic = viewModel.topic.trimmingCharacters(in: .whitespacesAndNewlines)
+        let topicSubtitle = rawTopic.isEmpty ? viewModel.contentMode.defaultFeedTitle : rawTopic.localizedCapitalized
+
+        switch currentScrollID {
+        case .learnEnd:
+            return nil
+        case let .reel(reelID):
+            guard let reel = viewModel.reels.first(where: { $0.id == reelID }) else { return nil }
+            guard items.contains(where: {
+                if case let .reel(r) = $0 { return r.id == reelID }
+                return false
+            }) else { return nil }
+            let chapterTitle = chapterTitles[reel.chapterIndex]
+            let stableKey = BookmarkStableKey.feedReel(mode: viewModel.contentMode, topic: rawTopic, reelID: reel.id)
+            let topicLine = rawTopic.isEmpty ? viewModel.contentMode.defaultFeedTitle : rawTopic.localizedCapitalized
+            let payload = FeedReelBookmarkPayload(
+                contentMode: viewModel.contentMode,
+                topicTitle: topicLine,
+                storedReel: StoredReel(from: reel),
+                chapterTitle: chapterTitle
+            )
+            let title = displayTitleForFeedReel(reel, chapterTitle: chapterTitle)
+            return BookmarkEntry(
+                stableKey: stableKey,
+                displayTitle: title,
+                displaySubtitle: topicSubtitle,
+                payload: .feedReel(payload)
+            )
+        case nil:
+            return nil
+        }
+    }
+
+    private func feedBookmarkButton(for entry: BookmarkEntry) -> some View {
+        let isOn = bookmarkStore.contains(stableKey: entry.stableKey)
+        return Button {
+            HapticsFeedback.impactSoft()
+            bookmarkStore.toggle(entry)
+        } label: {
+            Image(systemName: isOn ? "bookmark.fill" : "bookmark")
+                .font(.system(size: UIIconSize.navAction, weight: .semibold))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(
+            .white.opacity(
+                isOn ? ReadingNavigationChrome.toolbarBookmarkFilledOpacity : ReadingNavigationChrome.toolbarActionOpacity
+            )
+        )
+        .accessibilityLabel(isOn ? "Remove bookmark" : "Bookmark this page")
+    }
+
+    private func displayTitleForFeedReel(_ reel: Reel, chapterTitle: String?) -> String {
+        if let chapterTitle, !chapterTitle.isEmpty { return chapterTitle }
+        switch reel.content {
+        case .chapterTitle(_, let title):
+            return title
+        case .content(_, let text):
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count <= 56 { return trimmed }
+            return String(trimmed.prefix(56)) + "…"
+        }
+    }
+
     var body: some View {
         AppScreenCanvas(wash: .none) {
             if viewModel.reels.isEmpty {
@@ -82,35 +150,40 @@ struct ReelsView: View {
         // Learn + Story: same feed chrome (Path mode uses `PathLessonSessionView`).
         .toolbar {
             if !viewModel.reels.isEmpty {
-                if currentScrollIndex == 0 {
+                if let bookmarkEntry = bookmarkEntryForCurrentPage {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            HapticsFeedback.impactSoft()
-                            Task { await viewModel.generateContent() }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: UIIconSize.navAction, weight: .semibold))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(
-                            viewModel.isLoading
-                                ? .white.opacity(ReadingNavigationChrome.toolbarActionDisabledOpacity)
-                                : .white.opacity(ReadingNavigationChrome.toolbarActionOpacity)
-                        )
-                        .disabled(viewModel.isLoading)
-                        .accessibilityLabel("Reload content")
+                        feedBookmarkButton(for: bookmarkEntry)
                     }
-                } else if maxVisitedSlideIndex > currentScrollIndex {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            jumpToFirstReel()
-                        } label: {
-                            Image(systemName: "arrowshape.up")
-                                .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Group {
+                        if currentScrollIndex == 0 {
+                            Button {
+                                HapticsFeedback.impactSoft()
+                                Task { await viewModel.generateContent() }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(
+                                viewModel.isLoading
+                                    ? .white.opacity(ReadingNavigationChrome.toolbarActionDisabledOpacity)
+                                    : .white.opacity(ReadingNavigationChrome.toolbarActionOpacity)
+                            )
+                            .disabled(viewModel.isLoading)
+                            .accessibilityLabel("Reload content")
+                        } else if maxVisitedSlideIndex > currentScrollIndex {
+                            Button {
+                                jumpToFirstReel()
+                            } label: {
+                                Image(systemName: "arrowshape.up")
+                                    .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.white.opacity(ReadingNavigationChrome.toolbarActionOpacity))
+                            .accessibilityLabel("Go to first slide")
                         }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.white.opacity(ReadingNavigationChrome.toolbarActionOpacity))
-                        .accessibilityLabel("Go to first slide")
                     }
                 }
             }
@@ -159,7 +232,8 @@ struct ReelsView: View {
                                     totalCount: items.count,
                                     chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
                                     topicTitle: topicTitle,
-                                    showsProgressBar: !isRestoringPosition
+                                    showsProgressBar: !isRestoringPosition,
+                                    progressAccent: viewModel.contentMode.modeAccentColor
                                 )
 
                                 if offset == 0 && !hasShownSwipeHint && items.count > 1 {
@@ -174,6 +248,7 @@ struct ReelsView: View {
                                 currentIndex: currentScrollIndex,
                                 showsProgressBar: !isRestoringPosition,
                                 isLoading: viewModel.isLoading,
+                                progressAccent: viewModel.contentMode.modeAccentColor,
                                 onGoDeeper: {
                                     Task { await viewModel.generateContent(learnDeeper: true) }
                                 },
@@ -361,6 +436,7 @@ private struct LearnModeEndScreenView: View {
     let currentIndex: Int
     let showsProgressBar: Bool
     let isLoading: Bool
+    let progressAccent: Color
     let onGoDeeper: () -> Void
     let onDone: () -> Void
 
@@ -373,7 +449,7 @@ private struct LearnModeEndScreenView: View {
             VStack(spacing: 20) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 58, weight: .bold))
-                    .foregroundStyle(Config.Brand.shortBreakColor)
+                    .foregroundStyle(progressAccent)
                     .accessibilityHidden(true)
 
                 Text("End of lesson")
@@ -436,7 +512,7 @@ private struct LearnModeEndScreenView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .overlay(alignment: .bottom) {
-            ReelProgressBar(totalSegments: totalSegments, currentIndex: currentIndex)
+            ReelProgressBar(totalSegments: totalSegments, currentIndex: currentIndex, progressAccent: progressAccent)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 24)
                 .opacity(showsProgressBar ? 1 : 0)

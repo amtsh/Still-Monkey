@@ -4,14 +4,16 @@ struct PathLessonSessionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: PathLessonSessionViewModel
+    let bookmarkStore: BookmarkStore
     @State private var currentPageID: PathLessonSessionViewModel.PageID?
     @State private var hasAppliedInitialPosition = false
     @State private var isPagingReady = false
     /// Furthest page index reached this session; “jump to first” only after swiping back from a later slide (matches `ReelsView`).
     @State private var maxVisitedSlideIndex: Int = 0
 
-    init(viewModel: PathLessonSessionViewModel) {
+    init(viewModel: PathLessonSessionViewModel, bookmarkStore: BookmarkStore) {
         _viewModel = State(initialValue: viewModel)
+        self.bookmarkStore = bookmarkStore
     }
 
     private var currentIndex: Int {
@@ -21,6 +23,61 @@ struct PathLessonSessionView: View {
 
     private var isChapterLoadingState: Bool {
         (viewModel.isLoading && viewModel.pages.isEmpty) || (!viewModel.pages.isEmpty && !isPagingReady)
+    }
+
+    private var bookmarkEntryForCurrentPage: BookmarkEntry? {
+        guard let pageID = currentPageID, !viewModel.pages.isEmpty else { return nil }
+        let topicTitle = viewModel.topicTitle
+
+        switch pageID {
+        case let .reel(reelID):
+            guard let reel = viewModel.reel(for: .reel(reelID)) else { return nil }
+            let chapterTitle = viewModel.chapterTitlesByIndex[reel.chapterIndex]
+            let stableKey = BookmarkStableKey.pathReel(lessonID: viewModel.lessonID, reelID: reel.id)
+            let payload = PathReelBookmarkPayload(
+                storedReel: StoredReel(from: reel),
+                chapterTitle: chapterTitle,
+                topicTitle: topicTitle
+            )
+            return BookmarkEntry(
+                stableKey: stableKey,
+                displayTitle: displayTitleForPathReel(reel, chapterTitle: chapterTitle),
+                displaySubtitle: topicTitle,
+                payload: .pathReel(payload)
+            )
+        case .quiz, .result:
+            return nil
+        }
+    }
+
+    private func displayTitleForPathReel(_ reel: Reel, chapterTitle: String?) -> String {
+        if let chapterTitle, !chapterTitle.isEmpty { return chapterTitle }
+        switch reel.content {
+        case .chapterTitle(_, let title):
+            return title
+        case .content(_, let text):
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.count <= 56 { return trimmed }
+            return String(trimmed.prefix(56)) + "…"
+        }
+    }
+
+    private func pathBookmarkButton(for entry: BookmarkEntry) -> some View {
+        let isOn = bookmarkStore.contains(stableKey: entry.stableKey)
+        return Button {
+            HapticsFeedback.impactSoft()
+            bookmarkStore.toggle(entry)
+        } label: {
+            Image(systemName: isOn ? "bookmark.fill" : "bookmark")
+                .font(.system(size: UIIconSize.navAction, weight: .semibold))
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(
+            .white.opacity(
+                isOn ? ReadingNavigationChrome.toolbarBookmarkFilledOpacity : ReadingNavigationChrome.toolbarActionOpacity
+            )
+        )
+        .accessibilityLabel(isOn ? "Remove bookmark" : "Bookmark this page")
     }
 
     var body: some View {
@@ -49,34 +106,39 @@ struct PathLessonSessionView: View {
                     .lineLimit(1)
             }
             if !viewModel.pages.isEmpty {
-                if currentIndex == 0 {
+                if let bookmarkEntry = bookmarkEntryForCurrentPage {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            Task { await reloadLesson() }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .font(.system(size: UIIconSize.navAction, weight: .semibold))
-                        }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(
-                            viewModel.isLoading
-                                ? .white.opacity(ReadingNavigationChrome.toolbarActionDisabledOpacity)
-                                : .white.opacity(ReadingNavigationChrome.toolbarActionOpacity)
-                        )
-                        .disabled(viewModel.isLoading)
-                        .accessibilityLabel("Reload lesson")
+                        pathBookmarkButton(for: bookmarkEntry)
                     }
-                } else if maxVisitedSlideIndex > currentIndex, let firstContentPageID = viewModel.firstContentPageID {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            jumpToLessonStart(firstContentPageID)
-                        } label: {
-                            Image(systemName: "arrowshape.up")
-                                .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Group {
+                        if currentIndex == 0 {
+                            Button {
+                                Task { await reloadLesson() }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                                    .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(
+                                viewModel.isLoading
+                                    ? .white.opacity(ReadingNavigationChrome.toolbarActionDisabledOpacity)
+                                    : .white.opacity(ReadingNavigationChrome.toolbarActionOpacity)
+                            )
+                            .disabled(viewModel.isLoading)
+                            .accessibilityLabel("Reload lesson")
+                        } else if maxVisitedSlideIndex > currentIndex, let firstContentPageID = viewModel.firstContentPageID {
+                            Button {
+                                jumpToLessonStart(firstContentPageID)
+                            } label: {
+                                Image(systemName: "arrowshape.up")
+                                    .font(.system(size: UIIconSize.navAction, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.white.opacity(ReadingNavigationChrome.toolbarActionOpacity))
+                            .accessibilityLabel("Go to first slide")
                         }
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.white.opacity(ReadingNavigationChrome.toolbarActionOpacity))
-                        .accessibilityLabel("Go to first slide")
                     }
                 }
             }
@@ -176,7 +238,8 @@ struct PathLessonSessionView: View {
                 totalCount: totalPageCount,
                 chapterTitle: chapterTitlesByIndex[reel.chapterIndex],
                 topicTitle: viewModel.topicTitle,
-                showsProgressBar: true
+                showsProgressBar: true,
+                progressAccent: ContentMode.path.modeAccentColor
             )
         } else if let question = viewModel.question(for: pageID) {
             QuizQuestionCard(
@@ -235,7 +298,7 @@ struct PathLessonSessionView: View {
         VStack(spacing: 18) {
             Image(systemName: "wifi.exclamationmark")
                 .font(.system(size: UIIconSize.hero))
-                .foregroundStyle(Config.Brand.focusColor.opacity(0.9))
+                .foregroundStyle(ContentMode.path.modeAccentColor.opacity(0.9))
             Text(message)
                 .font(.headline)
                 .foregroundStyle(.white)
@@ -576,7 +639,7 @@ private struct LessonResultCard: View {
         if hasQuizAttempt {
             return Color.red.opacity(0.78)
         }
-        return Config.Brand.focusColor.opacity(0.85)
+        return ContentMode.path.modeAccentColor.opacity(0.85)
     }
 
     private var title: String {

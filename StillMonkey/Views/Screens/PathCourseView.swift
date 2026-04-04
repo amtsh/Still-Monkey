@@ -264,7 +264,7 @@ struct PathCourseView: View {
         VStack(alignment: .leading, spacing: 16) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: UIIconSize.hero))
-                .foregroundStyle(Config.Brand.focusColor.opacity(0.9))
+                .foregroundStyle(ContentMode.path.modeAccentColor.opacity(0.9))
 
             Text(message)
                 .font(.headline)

@@ -1,9 +1,9 @@
 import Foundation
 
 enum ContentMode: String, CaseIterable, Codable {
-    case learn = "Learn"
-    case story = "Story"
     case path = "Path"
+    case story = "Story"
+    case learn = "Learn"
 
     var tabLabel: String {
         rawValue

@@ -1,6 +1,6 @@
 import Foundation
 
-struct StoredReel: Codable {
+struct StoredReel: Codable, Equatable {
     private enum CodingKeys: String, CodingKey {
         case id
         case kind

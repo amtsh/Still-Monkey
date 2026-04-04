@@ -3,6 +3,7 @@ import SwiftUI
 struct ReelProgressBar: View {
     let totalSegments: Int
     let currentIndex: Int
+    var progressAccent: Color = Config.Brand.learnAccentColor
 
     var body: some View {
         HStack(spacing: 3) {
@@ -20,7 +21,7 @@ struct ReelProgressBar: View {
 
     private func segmentColor(at index: Int) -> Color {
         if index < currentIndex { return Color.white.opacity(0.42) }
-        if index == currentIndex { return Config.Brand.focusColor }
+        if index == currentIndex { return progressAccent }
         return Color.white.opacity(0.18)
     }
 }

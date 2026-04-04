@@ -5,6 +5,8 @@ enum ReadingNavigationChrome {
     static let titleOpacity: Double = 0.42
     static let toolbarActionOpacity: Double = 0.45
     static let toolbarActionDisabledOpacity: Double = 0.24
+    /// `bookmark.fill` in toolbars (brighter than outline `bookmark` and other trailing actions).
+    static let toolbarBookmarkFilledOpacity: Double = 0.78
 }
 
 extension View {
@@ -25,7 +27,7 @@ enum AppScreenBackground {
     /// Optional wash for feature areas (lesson path, etc.): stays subtle on the same base.
     static func accentWash(
         topLeading: Color = Config.Brand.longBreakColor.opacity(0.14),
-        topTrailing: Color = Config.Brand.focusColor.opacity(0.08)
+        topTrailing: Color = Config.Brand.learnAccentColor.opacity(0.08)
     ) -> LinearGradient {
         LinearGradient(
             colors: [topLeading, topTrailing, .clear],
@@ -86,7 +88,7 @@ enum HomeLayout {
     static let homeRowAvatarCornerRadius: CGFloat = 4
     /// Leading icon column + `HStack` spacing before title (aligns dividers with text).
     static let listRowLeadingIconWidth: CGFloat = 20
-    /// Fixed width for Learn / Story / Path pills (composer, path header).
+    /// Fixed width for Path / Story / Learn pills (composer, path header).
     static let modePillWidth: CGFloat = 76
     /// Space between trailing pill (“Last seen”, mode pill) and chevron (tighter than `listRowIconTitleSpacing`).
     static let trailingPillChevronSpacing: CGFloat = 4
