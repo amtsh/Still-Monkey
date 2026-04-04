@@ -13,16 +13,20 @@ enum Config {
     static let openRouterModel = "x-ai/grok-4.1-fast"
     static let apiKeyUserDefaultsKey = "openRouterAPIKey"
 
-    /// Shared with Pravah: dark canvas, accents, and semantic fills.
+    /// Spotify-inspired: true black canvas, green accent, flat card surfaces.
     enum Brand {
-        static let focusColor = Color(red: 0.96, green: 0.72, blue: 0.22)
+        /// Spotify green — primary accent (Learn mode, tint, CTAs).
+        static let focusColor = Color(red: 0.114, green: 0.725, blue: 0.329)
         static let shortBreakColor = Color.green
         static let longBreakColor = Color(red: 0.68, green: 0.58, blue: 0.94)
-        /// Soft violet for Story mode — calm, relaxing (composer pills, suggested rows).
+        /// Soft violet for Story mode — calm, relaxing (composer pills, list rows).
         static let storyVioletColor = Color(red: 0.58, green: 0.48, blue: 0.92)
 
-        static let backgroundDark = Color(red: 0.05, green: 0.04, blue: 0.07)
-        static let backgroundSheet = Color(red: 0.14, green: 0.12, blue: 0.18)
+        static let backgroundDark = Color(red: 0.051, green: 0.051, blue: 0.051)
+        static let backgroundSheet = Color(red: 0.118, green: 0.118, blue: 0.118)
+
+        /// Flat tiles (home list surfaces) — same as sheet surface.
+        static let spotifyCardSurface = backgroundSheet
 
         static let destructiveTint = Color(red: 0.24, green: 0.04, blue: 0.08)
         static let actionTint = Color(red: 0.04, green: 0.16, blue: 0.12)
@@ -33,9 +37,13 @@ enum Config {
         static let readableSecondaryText = Color.white.opacity(0.68)
         static let readableTertiaryText = Color.white.opacity(0.52)
 
+        /// Neutral well behind recent-row icons (mode color on the symbol only).
+        static let listIconWellFill = Color.white.opacity(0.06)
+        static let listIconWellStroke = Color.white.opacity(0.10)
+
         static let accentColorOptions: [Color] = [
             Color(red: 1.0, green: 0.42, blue: 0.322),
-            Color(red: 0.96, green: 0.72, blue: 0.22),
+            Color(red: 0.114, green: 0.725, blue: 0.329),
             Color(red: 0.18, green: 0.80, blue: 0.44),
             Color(red: 0.20, green: 0.78, blue: 0.75),
             Color(red: 0.35, green: 0.68, blue: 0.98),
@@ -68,7 +76,8 @@ extension ContentMode {
         }
     }
 
-    var suggestedRowIconName: String {
+    /// SF Symbol for home recent rows, reels empty state, and composer affordances.
+    var modeRowIconName: String {
         switch self {
         case .learn:
             "book"

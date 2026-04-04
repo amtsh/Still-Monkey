@@ -47,9 +47,14 @@ enum HomeRecentItem: Identifiable {
         }
     }
 
-    /// Matches suggested-topic and composer iconography per mode.
-    var iconName: String {
-        contentMode.suggestedRowIconName
+    /// Short UI label: "Learn", "Story", or "Path".
+    var modeLabel: String {
+        contentMode.tabLabel
+    }
+
+    /// SF Symbol name for this row’s mode (aligned with `contentMode`).
+    var modeSystemImageName: String {
+        contentMode.modeRowIconName
     }
 }
 

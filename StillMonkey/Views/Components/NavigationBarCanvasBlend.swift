@@ -11,8 +11,8 @@ import SwiftUI
 import UIKit
 
 private extension UIColor {
-    /// Matches `Config.Brand.backgroundDark`.
-    static let appCanvas = UIColor(red: 0.05, green: 0.04, blue: 0.07, alpha: 1)
+    /// Matches `Config.Brand.backgroundDark` (#0D0D0D).
+    static let appCanvas = UIColor(red: 0.051, green: 0.051, blue: 0.051, alpha: 1)
 }
 
 /// Calls back when the hosting controller joins a `UINavigationController` (needed because `navigationController` can be nil on first layout).

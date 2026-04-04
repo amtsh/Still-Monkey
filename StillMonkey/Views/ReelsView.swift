@@ -300,7 +300,7 @@ struct ReelsView: View {
                 }
                 secondaryButton(title: "Back", action: handleBack)
             } else {
-                Image(systemName: viewModel.contentMode.suggestedRowIconName)
+                Image(systemName: viewModel.contentMode.modeRowIconName)
                     .font(.system(size: UIIconSize.hero))
                     .foregroundStyle(viewModel.contentMode.modeAccentColor.opacity(0.85))
                     .accessibilityHidden(true)

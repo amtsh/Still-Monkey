@@ -40,10 +40,6 @@ struct ContentView: View {
                 onStartLearning: {
                     startCurrentMode()
                     isSearchFocused = false
-                },
-                onStartSuggestion: { topic, mode in
-                    startMode(mode, topic: topic)
-                    isSearchFocused = false
                 }
             )
             .safeAreaInset(edge: .bottom) {

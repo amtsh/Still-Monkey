@@ -6,46 +6,32 @@
 import SwiftUI
 
 struct HomeHeroCardView: View {
-    var body: some View {
-        GeometryReader { proxy in
-            let contentWidth = max(proxy.size.width - 40, 0)
-            let leftWidth = contentWidth * 0.7
-            let rightWidth = contentWidth * 0.3
-
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Feed your curiosity.")
-                        .font(.title2.weight(.semibold))
-                        .multilineTextAlignment(.leading)
-                        .lineSpacing(2)
-                        .minimumScaleFactor(0.85)
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [
-                                    Config.Brand.focusColor,
-                                    Config.Brand.longBreakColor,
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-
-                    Text("Learn something real.")
-                        .font(.subheadline)
-                        .foregroundStyle(Config.Brand.readableSecondaryText)
-                        .lineSpacing(2)
-                }
-                .frame(width: leftWidth, alignment: .leading)
-
-                LottieView(name: "flower_plant", speed: 0.9)
-                    .frame(width: rightWidth, height: proxy.size.height - 40)
-                    .opacity(0.95)
-            }
-            .padding(.horizontal, HomeLayout.horizontalContentInset)
-            .padding(.top, 24)
-            .padding(.bottom, 24)
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 5 ..< 12:
+            return "Good morning"
+        case 12 ..< 17:
+            return "Good afternoon"
+        case 17 ..< 22:
+            return "Good evening"
+        default:
+            return "Good night"
         }
-        .frame(height: HomeLayout.heroCardHeight)
-        .glassCard(cornerRadius: 24)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(greeting)
+                .font(.largeTitle.weight(.semibold))
+                .foregroundStyle(.white)
+                .minimumScaleFactor(0.85)
+
+            Text("What do you want to learn?")
+                .font(.subheadline.weight(.regular))
+                .foregroundStyle(Config.Brand.readableSecondaryText)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: HomeLayout.heroCardHeight, alignment: .center)
     }
 }

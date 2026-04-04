@@ -13,9 +13,9 @@ struct SearchRowView: View {
     var iconForeground: Color? = nil
     /// When set, trailing label uses a compact accent pill (same metrics as neutral “Last seen”).
     var trailingPillAccent: Color? = nil
-    /// When true, omits the leading icon (Suggested rows with trailing mode pill only).
+    /// When true, omits the leading icon (trailing mode pill only).
     var leadingIconHidden: Bool = false
-    /// When true (Recent history only), row height matches edit mode (44pt content + vertical padding). Suggested rows use the default compact metrics.
+    /// When true (Recent history only), row height matches edit mode (44pt content + vertical padding).
     var recentRowHeight: Bool = false
     var isEditing: Bool = false
     var onTap: () -> Void

@@ -13,14 +13,12 @@ struct HomeView: View {
     @State private var searchText = ""
     @State private var isEditingHistory = false
     @State private var pendingDeleteItem: HomeRecentItem?
-    @State private var suggestedViewModel = SuggestedTopicsViewModel()
     @State private var isShowingDeleteConfirmation = false
     var isSearchFocused: FocusState<Bool>.Binding
     var onOpenSettings: (() -> Void)? = nil
     var onOpenFeed: (() -> Void)? = nil
     var onOpenCourseMap: (() -> Void)? = nil
     var onStartLearning: (() -> Void)? = nil
-    var onStartSuggestion: ((String, ContentMode) -> Void)? = nil
 
     private var canStart: Bool {
         !(viewModel.isLoading || courseViewModel.isLoading)
@@ -37,6 +35,8 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
                     HomeHeroCardView()
 
+                    SuggestionsWallView(onSelect: selectSuggestion)
+
                     if !recentItemsForHome.isEmpty {
                         HomeRecentSectionsView(
                             items: recentItemsForHome,
@@ -47,10 +47,6 @@ struct HomeView: View {
                             onOpen: openRecent,
                             onRequestDelete: requestDeleteRecent
                         )
-                    }
-
-                    SuggestedTopicsView(viewModel: suggestedViewModel) { topic, mode in
-                        handleSuggestionSelection(topic, mode: mode)
                     }
                 }
                 .padding(.horizontal, HomeLayout.scrollHorizontalPadding)
@@ -65,8 +61,8 @@ struct HomeView: View {
             }
         }
         .animation(reduceMotion ? .none : .easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
-        .navigationTitle("Still Monkey")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $searchText, prompt: viewModel.contentMode.composerPlaceholder)
         .searchFocused(isSearchFocused)
         .onChange(of: searchText) { _, newValue in
@@ -175,15 +171,9 @@ struct HomeView: View {
         isSearchFocused.wrappedValue = false
     }
 
-    private func handleSuggestionSelection(_ topic: String, mode: ContentMode) {
+    private func selectSuggestion(topic: String, mode: ContentMode) {
         viewModel.contentMode = mode
-        viewModel.topic = topic
         searchText = topic
-
-        if let onStartSuggestion {
-            onStartSuggestion(topic, mode)
-        } else {
-            onStartLearning?()
-        }
+        isSearchFocused.wrappedValue = true
     }
 }

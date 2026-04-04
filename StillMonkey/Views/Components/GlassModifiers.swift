@@ -15,20 +15,6 @@ struct GlassBackgroundModifier<S: Shape>: ViewModifier {
     }
 }
 
-struct SubmitButtonBackgroundModifier: ViewModifier {
-    let enabled: Bool
-
-    func body(content: Content) -> some View {
-            content
-                .background(
-                Circle().fill(enabled ? Config.Brand.startButtonFill : Config.Brand.backgroundSheet.opacity(0.5))
-            )
-            .overlay(
-                Circle().stroke(Config.Brand.startButtonTextColor.opacity(enabled ? 0.35 : 0.2), lineWidth: 1)
-            )
-    }
-}
-
 struct SettingsSectionGlassModifier: ViewModifier {
     let cornerRadius: CGFloat
     let isConfigured: Bool

@@ -17,7 +17,7 @@ extension View {
 }
 
 enum AppScreenBackground {
-    /// Full-screen base: solid deep violet-black (no vertical gradient at the bottom).
+    /// Full-screen base: solid near-black (Spotify-style, no vertical gradient at the bottom).
     static var standard: Color {
         Config.Brand.backgroundDark
     }
@@ -58,7 +58,7 @@ struct AppScreenCanvas<Content: View>: View {
                 AppScreenBackground.accentWash()
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
-            case .custom(let topLeading, let topTrailing):
+            case let .custom(topLeading, topTrailing):
                 AppScreenBackground.accentWash(topLeading: topLeading, topTrailing: topTrailing)
                     .ignoresSafeArea()
                     .allowsHitTesting(false)
@@ -79,7 +79,11 @@ enum HomeLayout {
     static let sectionSpacing: CGFloat = 24
     static let groupedSectionInnerSpacing: CGFloat = 16
     static let sectionHeaderSpacing: CGFloat = 12
-    static let heroCardHeight: CGFloat = 210
+    /// Greeting banner (no hero glass card).
+    static let heroCardHeight: CGFloat = 112
+    /// Home recent rows — colored square avatar (Spotify-style list).
+    static let homeRowAvatarSize: CGFloat = 56
+    static let homeRowAvatarCornerRadius: CGFloat = 4
     /// Leading icon column + `HStack` spacing before title (aligns dividers with text).
     static let listRowLeadingIconWidth: CGFloat = 20
     /// Fixed width for Learn / Story / Path pills (composer, path header).
@@ -87,11 +91,19 @@ enum HomeLayout {
     /// Space between trailing pill (“Last seen”, mode pill) and chevron (tighter than `listRowIconTitleSpacing`).
     static let trailingPillChevronSpacing: CGFloat = 4
     static let listRowIconTitleSpacing: CGFloat = 12
-    static var dividerLeadingInset: CGFloat { listRowLeadingIconWidth + listRowIconTitleSpacing }
+    /// Dividers in home list rows align with text after avatar.
+    static var homeRowDividerLeadingInset: CGFloat {
+        homeRowAvatarSize + listRowIconTitleSpacing
+    }
 
     /// HIG minimum touch target (44pt); with 11pt vertical padding, single-line rows read as standard list density.
     static let listRowMinHeight: CGFloat = 44
     static let listRowVerticalPadding: CGFloat = 11
+
+    /// Suggestions wall (home empty state): scrolling glass pill rows (fits mode icon well + padding).
+    static let suggestionsRowHeight: CGFloat = 40
+    static let suggestionsPillSpacing: CGFloat = 8
+    static let suggestionsRowSpacing: CGFloat = 6
 }
 
 /// Long-form reading (matches reel body / quiz copy rhythm).
@@ -103,10 +115,8 @@ enum ReadingTypography {
 }
 
 enum UIIconSize {
-    static let small: CGFloat = 11
     static let inline: CGFloat = 14
     static let navAction: CGFloat = 16
-    static let prominentAction: CGFloat = 22
     static let hero: CGFloat = 48
 }
 
