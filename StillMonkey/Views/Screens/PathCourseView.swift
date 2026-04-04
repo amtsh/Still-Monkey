@@ -5,9 +5,10 @@ struct PathCourseView: View {
     var onOpenLesson: (String) -> Void
 
     @State private var lastAutoScrolledLessonID: String?
+    @State private var isShowingRefreshConfirmation = false
 
     var body: some View {
-        AppScreenCanvas(wash: .pathDefault) {
+        AppScreenCanvas(wash: .none) {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 24) {
@@ -33,7 +34,7 @@ struct PathCourseView: View {
             if viewModel.course != nil {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        Task { await viewModel.refreshCurrentCourse() }
+                        isShowingRefreshConfirmation = true
                     } label: {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: UIIconSize.navAction, weight: .semibold))
@@ -43,6 +44,18 @@ struct PathCourseView: View {
                     .accessibilityLabel("Refresh lesson path")
                 }
             }
+        }
+        .confirmationDialog(
+            "Reload lesson path?",
+            isPresented: $isShowingRefreshConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Reload", role: .destructive) {
+                Task { await viewModel.refreshCurrentCourse() }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will replace the current lesson path with a newly generated version for this topic.")
         }
         .appBlendedNavigationBar()
     }
@@ -139,7 +152,7 @@ struct PathCourseView: View {
                 )
                 .glassBackground(in: Capsule(), interactive: false)
 
-            Text(viewModel.course?.courseTitle ?? "Build a new lesson path")
+            Text(viewModel.course?.courseTitle ?? "Building new lesson path ...")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundStyle(.white)
 
@@ -239,7 +252,7 @@ struct PathCourseView: View {
             ProgressView()
                 .tint(.white)
                 .scaleEffect(1.2)
-            Text("Building your path...")
+            Text("Building your path ...")
                 .font(.headline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)
         }

@@ -19,19 +19,23 @@ struct PathLessonSessionView: View {
         return viewModel.pages.firstIndex(of: currentPageID) ?? 0
     }
 
+    private var isChapterLoadingState: Bool {
+        (viewModel.isLoading && viewModel.pages.isEmpty) || (!viewModel.pages.isEmpty && !isPagingReady)
+    }
+
     var body: some View {
-        AppScreenCanvas(wash: .custom(
-            topLeading: Config.Brand.accentColor(at: 5).opacity(0.12),
-            topTrailing: Config.Brand.actionTint.opacity(0.18)
-        )) {
-            if viewModel.isLoading && viewModel.pages.isEmpty {
-                loadingState
-            } else if let error = viewModel.error, viewModel.pages.isEmpty {
-                errorState(message: error)
-            } else if !viewModel.pages.isEmpty && !isPagingReady {
-                loadingState
+        Group {
+            if isChapterLoadingState {
+                AppScreenCanvas(wash: .none) {
+                    lessonContent
+                }
             } else {
-                pagedLesson
+                AppScreenCanvas(wash: .custom(
+                    topLeading: Config.Brand.accentColor(at: 5).opacity(0.12),
+                    topTrailing: Config.Brand.actionTint.opacity(0.18)
+                )) {
+                    lessonContent
+                }
             }
         }
         .navigationTitle("")
@@ -97,6 +101,19 @@ struct PathLessonSessionView: View {
         }
     }
 
+    @ViewBuilder
+    private var lessonContent: some View {
+        if viewModel.isLoading && viewModel.pages.isEmpty {
+            loadingState
+        } else if let error = viewModel.error, viewModel.pages.isEmpty {
+            errorState(message: error)
+        } else if !viewModel.pages.isEmpty && !isPagingReady {
+            loadingState
+        } else {
+            pagedLesson
+        }
+    }
+
     private var pagedLesson: some View {
         ScrollView(.vertical) {
             let pages = viewModel.pages
@@ -110,10 +127,10 @@ struct PathLessonSessionView: View {
                         totalPageCount: pages.count,
                         chapterTitlesByIndex: chapterTitlesByIndex
                     )
-                        .containerRelativeFrame([.horizontal, .vertical])
-                        .clipShape(Rectangle())
-                        .clipped()
-                        .id(pageID)
+                    .containerRelativeFrame([.horizontal, .vertical])
+                    .clipShape(Rectangle())
+                    .clipped()
+                    .id(pageID)
                 }
             }
             .scrollTargetLayout()
@@ -190,6 +207,11 @@ struct PathLessonSessionView: View {
                         currentPageID = .quiz(firstQuestion.id)
                     }
                 },
+                onReread: {
+                    if let firstContentPageID = viewModel.firstContentPageID {
+                        jumpToLessonStart(firstContentPageID)
+                    }
+                },
                 onBackToPath: {
                     dismiss()
                 }
@@ -202,7 +224,7 @@ struct PathLessonSessionView: View {
             ProgressView()
                 .tint(.white)
                 .scaleEffect(1.2)
-            Text("Loading lesson...")
+            Text("Loading lesson ...")
                 .font(.headline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)
         }
@@ -222,6 +244,8 @@ struct PathLessonSessionView: View {
             Button("Back to path") {
                 dismiss()
             }
+            .font(.headline.weight(.semibold))
+            .controlSize(.large)
             .buttonStyle(.borderedProminent)
             .tint(Config.Brand.startButtonFill)
             .foregroundStyle(Config.Brand.startButtonTextColor)
@@ -455,6 +479,7 @@ private struct LessonResultCard: View {
     let isCourseComplete: Bool
     let onSubmit: () -> Void
     let onRetry: () -> Void
+    let onReread: () -> Void
     let onBackToPath: () -> Void
 
     @State private var didEmitResultHaptic = false
@@ -482,12 +507,26 @@ private struct LessonResultCard: View {
 
                 VStack(spacing: 12) {
                     if didPassQuiz {
-                        Button("Back to path") {
+                        Button {
+                            HapticsFeedback.impactMedium()
                             onBackToPath()
+                        } label: {
+                            Text("Back to path")
+                                .font(.system(size: 16, weight: .semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
                         }
                         .buttonStyle(.borderedProminent)
                         .tint(Config.Brand.startButtonFill)
                         .foregroundStyle(Config.Brand.startButtonTextColor)
+
+                        Button("Read lesson again") {
+                            HapticsFeedback.impactSoft()
+                            onReread()
+                        }
+                        .font(.system(size: 17, weight: .medium))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Config.Brand.readableSecondaryText)
                     } else if hasQuizAttempt {
                         Button("Try again") {
                             onRetry()
@@ -505,6 +544,7 @@ private struct LessonResultCard: View {
                         .disabled(!canSubmitQuiz)
                     }
                 }
+                .padding(.top, 12)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -568,4 +608,5 @@ private struct LessonResultCard: View {
             ? "Check your answers to unlock the next lesson."
             : "Answer every question before submitting."
     }
+
 }

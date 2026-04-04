@@ -24,7 +24,7 @@ struct HomeHeroCardView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(greeting)
                 .font(.largeTitle.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.white.opacity(0.82))
                 .minimumScaleFactor(0.85)
 
             Text("What do you want to learn?")

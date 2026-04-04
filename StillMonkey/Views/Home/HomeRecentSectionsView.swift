@@ -14,6 +14,11 @@ struct HomeRecentSectionsView: View {
     let onOpen: (HomeRecentItem) -> Void
     let onRequestDelete: (HomeRecentItem) -> Void
 
+    /// Show "Last seen" on a single row only (the first matching recent item).
+    private var lastSeenItemID: HomeRecentItem.ID? {
+        items.first(where: isLastSeenCandidate)?.id
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: HomeLayout.sectionHeaderSpacing) {
             HStack(spacing: 12) {
@@ -35,7 +40,7 @@ struct HomeRecentSectionsView: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    recentRow(item, isLastSeen: isLastSeen(item))
+                    recentRow(item, isLastSeen: item.id == lastSeenItemID)
 
                     if index < items.count - 1 {
                         Divider()
@@ -136,7 +141,7 @@ struct HomeRecentSectionsView: View {
         .accessibilityLabel("\(item.displayTopic), \(item.modeLabel)")
     }
 
-    private func isLastSeen(_ item: HomeRecentItem) -> Bool {
+    private func isLastSeenCandidate(_ item: HomeRecentItem) -> Bool {
         switch item {
         case let .reel(snapshot):
             return snapshot.id == lastAccessedReelID

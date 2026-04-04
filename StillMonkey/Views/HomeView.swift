@@ -35,9 +35,9 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: HomeLayout.sectionSpacing) {
                     HomeHeroCardView()
 
-                    SuggestionsWallView(onSelect: selectSuggestion)
-
-                    if !recentItemsForHome.isEmpty {
+                    if recentItemsForHome.isEmpty {
+                        SuggestionsWallView(onSelect: selectSuggestion)
+                    } else {
                         HomeRecentSectionsView(
                             items: recentItemsForHome,
                             isEditingHistory: $isEditingHistory,
@@ -78,6 +78,14 @@ struct HomeView: View {
         }
         .onSubmit(of: .search) {
             startLearning()
+        }
+        .onChange(of: viewModel.reels.count) { _, newCount in
+            guard newCount > 0, !viewModel.isLoading, viewModel.error == nil else { return }
+            clearSearchInput()
+        }
+        .onChange(of: courseViewModel.course?.id) { _, newCourseID in
+            guard newCourseID != nil, !courseViewModel.isLoading, courseViewModel.error == nil else { return }
+            clearSearchInput()
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -131,13 +139,13 @@ struct HomeView: View {
         case let .reel(snapshot):
             viewModel.contentMode = snapshot.mode
             viewModel.loadRecentSnapshot(snapshot)
-            searchText = snapshot.topic
+            clearSearchInput()
             onOpenFeed?()
         case let .path(snapshot):
             viewModel.contentMode = .path
             viewModel.topic = snapshot.topic
-            searchText = snapshot.topic
             courseViewModel.loadRecentCourse(snapshot)
+            clearSearchInput()
             onOpenCourseMap?()
         }
     }
@@ -175,5 +183,10 @@ struct HomeView: View {
         viewModel.contentMode = mode
         searchText = topic
         isSearchFocused.wrappedValue = true
+    }
+
+    private func clearSearchInput() {
+        guard !searchText.isEmpty else { return }
+        searchText = ""
     }
 }
