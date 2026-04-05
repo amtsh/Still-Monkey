@@ -4,9 +4,23 @@ struct PathCourseView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: PathCourseViewModel
     var onOpenLesson: (String) -> Void
+    var onOpenSettings: (() -> Void)?
+
+    @AppStorage(Config.premiumMemberUserDefaultsKey) private var isPremiumMember = false
 
     @State private var lastAutoScrolledLessonID: String?
     @State private var isShowingRefreshConfirmation = false
+    @State private var lockedLessonForSheet: PathLessonSummary?
+
+    init(
+        viewModel: PathCourseViewModel,
+        onOpenLesson: @escaping (String) -> Void,
+        onOpenSettings: (() -> Void)? = nil
+    ) {
+        self.viewModel = viewModel
+        self.onOpenLesson = onOpenLesson
+        self.onOpenSettings = onOpenSettings
+    }
 
     var body: some View {
         AppScreenCanvas(wash: .none) {
@@ -57,6 +71,40 @@ struct PathCourseView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This will replace the current lesson path with a newly generated version for this topic.")
+        }
+        .sheet(item: $lockedLessonForSheet) { lesson in
+            NavigationStack {
+                LockedLessonGateSheet(
+                    lesson: lesson,
+                    isPremiumMember: isPremiumMember,
+                    onConfirmOpenLesson: {
+                        viewModel.unlockLessonForPremiumMember(lesson.id)
+                        lockedLessonForSheet = nil
+                        onOpenLesson(lesson.id)
+                    },
+                    onOpenSettings: {
+                        lockedLessonForSheet = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(0.35))
+                            onOpenSettings?()
+                        }
+                    }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            lockedLessonForSheet = nil
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .tint(.primary)
+                        .accessibilityLabel("Close sheet")
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .accessibilityElement(children: .contain)
         }
         .appBlendedNavigationBar()
     }
@@ -175,7 +223,11 @@ struct PathCourseView: View {
             VStack(spacing: 12) {
                 Button {
                     HapticsFeedback.impactSoft()
-                    onOpenLesson(lesson.id)
+                    if state == .locked {
+                        lockedLessonForSheet = lesson
+                    } else {
+                        onOpenLesson(lesson.id)
+                    }
                 } label: {
                     ZStack {
                         Circle()
@@ -195,8 +247,8 @@ struct PathCourseView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .disabled(state == .locked)
                 .accessibilityLabel(accessibilityLessonLabel(lesson: lesson, state: state))
+                .accessibilityHint(state == .locked ? "Opens options to access this lesson" : "Opens lesson")
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -348,7 +400,7 @@ struct PathCourseView: View {
         case .current:
             return "play.fill"
         case .unlocked:
-            return "star.fill"
+            return "lock.open.fill"
         }
     }
 

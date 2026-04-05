@@ -59,9 +59,15 @@ struct ContentView: View {
                 case .reels:
                     ReelsView(viewModel: viewModel, bookmarkStore: bookmarkStore)
                 case .pathCourse:
-                    PathCourseView(viewModel: courseViewModel) { lessonID in
-                        showPathLesson(lessonID)
-                    }
+                    PathCourseView(
+                        viewModel: courseViewModel,
+                        onOpenLesson: { lessonID in
+                            showPathLesson(lessonID)
+                        },
+                        onOpenSettings: {
+                            isShowingSettings = true
+                        }
+                    )
                 case .pathLesson(let lessonID):
                     PathLessonSessionView(
                         viewModel: PathLessonSessionViewModel(

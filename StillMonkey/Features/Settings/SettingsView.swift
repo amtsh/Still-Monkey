@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(Config.apiKeyUserDefaultsKey) private var apiKey: String = ""
+    @AppStorage(Config.premiumMemberUserDefaultsKey) private var isPremiumMember = false
     @State private var isTokenVisible = false
     @State private var showClearConfirm = false
 
@@ -15,6 +16,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     apiKeySection
+                    premiumSection
                     helpSection
                 }
                 .padding(.horizontal, 16)
@@ -66,6 +68,34 @@ struct SettingsView: View {
             .modifier(SettingsSectionGlassModifier(cornerRadius: 14, isConfigured: isConfigured))
 
             Text("Stored locally on this device.")
+                .font(.caption)
+                .foregroundStyle(Config.Brand.readableTertiaryText)
+        }
+        .padding(16)
+        .glassCard(cornerRadius: 14)
+    }
+
+    private var premiumSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Membership")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Toggle(isOn: $isPremiumMember) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Premium membership")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                    Text("Allows opening locked lessons on the lesson path from the map.")
+                        .font(.caption)
+                        .foregroundStyle(Config.Brand.readableTertiaryText)
+                }
+            }
+            .tint(ContentMode.path.modeAccentColor)
+            .padding(16)
+            .modifier(SettingsSectionGlassModifier(cornerRadius: 14, isConfigured: isPremiumMember))
+
+            Text("Stored locally on this device. Replace with App Store subscription when ready.")
                 .font(.caption)
                 .foregroundStyle(Config.Brand.readableTertiaryText)
         }

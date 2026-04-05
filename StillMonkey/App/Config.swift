@@ -12,6 +12,8 @@ enum Config {
     static let openRouterEndpoint = "https://openrouter.ai/api/v1/chat/completions"
     static let openRouterModel = "x-ai/grok-4.1-fast"
     static let apiKeyUserDefaultsKey = "openRouterAPIKey"
+    /// Local toggle for premium features (e.g. opening locked path lessons). Replace with StoreKit when ready.
+    static let premiumMemberUserDefaultsKey = "isPremiumMember"
 
     /// Spotify-inspired: true black canvas, flat card surfaces.
     enum Brand {

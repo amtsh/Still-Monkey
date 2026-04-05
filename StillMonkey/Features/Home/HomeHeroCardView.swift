@@ -19,7 +19,7 @@ struct HomeHeroCardView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(greeting)
                 .font(.largeTitle.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.82))

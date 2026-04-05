@@ -182,6 +182,18 @@ final class PathCourseViewModel {
         course?.accessState(for: lesson.id) ?? .locked
     }
 
+    /// Adds a locked lesson to `unlockedLessonIDs` so `startOrRestoreLesson` can run (premium path).
+    func unlockLessonForPremiumMember(_ lessonID: String) {
+        guard var course else { return }
+        guard course.lessons.contains(where: { $0.id == lessonID }) else { return }
+        guard !course.completedLessonIDs.contains(lessonID) else { return }
+        if !course.unlockedLessonIDs.contains(lessonID) {
+            course.unlockedLessonIDs.append(lessonID)
+        }
+        course.currentLessonID = lessonID
+        saveCourse(course)
+    }
+
     func lessonProgress(for lessonID: String) -> PathLessonProgress? {
         course?.progress(for: lessonID)
     }
