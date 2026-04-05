@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct FloatingSearchBar: View {
-    @Bindable var viewModel: TopicViewModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Bindable var viewModel: ReelFeedViewModel
     var isSearchFocused: FocusState<Bool>.Binding
 
     var body: some View {
@@ -17,11 +18,11 @@ struct FloatingSearchBar: View {
                                 viewModel.contentMode = mode
                             } label: {
                                 Text(mode.tabLabel)
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .font(.caption.weight(.semibold))
                                     .foregroundStyle(isSelected ? Color.white : Config.Brand.readableSecondaryText)
                                     .multilineTextAlignment(.center)
-                                    .padding(.vertical, 6)
-                                    .frame(width: HomeLayout.modePillWidth)
+                                    .padding(.vertical, 8)
+                                    .frame(minWidth: HomeLayout.modePillWidth, minHeight: UITouchTarget.minimum)
                                     .background(
                                         Capsule()
                                             .fill(isSelected ? mode.modeAccentColor.opacity(0.22) : Color.clear)
@@ -53,7 +54,7 @@ struct FloatingSearchBar: View {
         .padding(.horizontal, 20)
         .padding(.top, 6)
         .padding(.bottom, 20)
-        .animation(.easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
+        .animation(reduceMotion ? .none : .easeInOut(duration: 0.22), value: isSearchFocused.wrappedValue)
         .onAppear {
             if !ContentMode.allCases.contains(viewModel.contentMode) {
                 viewModel.contentMode = .learn

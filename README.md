@@ -6,7 +6,13 @@ Still Monkey app is a focused, AI-powered learning app that turns any topic into
 
 - **Entry**: `StillMonkeyApp` → `ContentView` (root `NavigationStack` and navigation destinations).
 - **Routing**: `ContentView` pushes `ReelsView` (Learn/Story feed), `PathCourseView`, and `PathLessonSessionView` based on internal `Route` cases.
-- **State**: `TopicViewModel` drives topic text, content mode (Learn / Story / Path), reels feed, and generation; `PathCourseViewModel` owns the structured course, lesson progress, and path navigation.
+- **State**: `ReelFeedViewModel` drives topic text, content mode (Learn / Story / Path), reels feed, and generation; `PathCourseViewModel` owns the structured course, lesson progress, and path navigation.
+
+### Folder layout (`StillMonkey/`)
+
+- **`App/`** — `StillMonkeyApp`, `Config`, `ContentView` (shell).
+- **`Core/Models`**, **`Core/Services`**, **`Core/UI/Components`** — shared domain, networking/parsing, design tokens (`StyleTokens`, `AppChrome`), and reusable UI.
+- **`Features/Home`**, **`Features/Reels`**, **`Features/PathCourse`**, **`Features/Bookmarks`**, **`Features/Settings`** — feature screens and their view models where applicable.
 
 ## What It Offers
 

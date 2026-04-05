@@ -79,7 +79,8 @@ private struct GlassPillView: View {
             }
             .padding(.leading, 12)
             .padding(.trailing, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
+            .frame(minHeight: UITouchTarget.minimum)
             .glassBackground(in: Capsule(), interactive: true)
         }
         .buttonStyle(.plain)

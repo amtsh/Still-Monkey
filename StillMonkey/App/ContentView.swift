@@ -10,7 +10,7 @@ struct ContentView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var viewModel = TopicViewModel()
+    @State private var viewModel = ReelFeedViewModel()
     @State private var courseViewModel = PathCourseViewModel()
     @State private var bookmarkStore = BookmarkStore()
     @State private var path: [Route] = []

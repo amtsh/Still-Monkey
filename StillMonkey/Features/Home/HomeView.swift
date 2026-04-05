@@ -7,7 +7,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Bindable var viewModel: TopicViewModel
+    @Bindable var viewModel: ReelFeedViewModel
     @Bindable var courseViewModel: PathCourseViewModel
     @Bindable var bookmarkStore: BookmarkStore
 
@@ -67,6 +67,7 @@ struct HomeView: View {
                 .padding(.top, HomeLayout.scrollTopPadding)
                 .padding(.bottom, HomeLayout.scrollBottomPadding)
             }
+            .scrollDismissesKeyboard(.interactively)
             .scrollEdgeEffectStyle(.soft, for: .top)
             .scrollDisabled(isSearchFocused.wrappedValue)
 

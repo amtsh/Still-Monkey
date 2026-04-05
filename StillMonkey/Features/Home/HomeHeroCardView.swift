@@ -30,6 +30,6 @@ struct HomeHeroCardView: View {
                 .foregroundStyle(Config.Brand.readableSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: HomeLayout.heroCardHeight, alignment: .center)
+        .padding(.vertical, 8)
     }
 }

@@ -69,7 +69,7 @@ struct OpenRouterService: Sendable {
 
     func stream(prompt: String, systemPrompt: String, apiKey: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 do {
                     try await consumeStream(
                         prompt: prompt,
@@ -81,6 +81,9 @@ struct OpenRouterService: Sendable {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+            continuation.onTermination = { @Sendable _ in
+                task.cancel()
             }
         }
     }
@@ -123,6 +126,7 @@ struct OpenRouterService: Sendable {
         }
 
         for try await line in bytes.lines {
+            try Task.checkCancellation()
             guard line.hasPrefix("data: ") else { continue }
             let data = String(line.dropFirst(6)).trimmingCharacters(in: .whitespacesAndNewlines)
             if data == "[DONE]" {

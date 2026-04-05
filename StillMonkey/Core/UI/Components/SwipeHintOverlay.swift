@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SwipeHintOverlay: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var visible = true
 
     var body: some View {
@@ -11,7 +12,7 @@ struct SwipeHintOverlay: View {
                     Image(systemName: "chevron.compact.up")
                         .font(.system(size: 28, weight: .light))
                         .foregroundStyle(Config.Brand.readableSecondaryText)
-                        .symbolEffect(.pulse, options: .nonRepeating)
+                        .modifier(ConditionalPulseSymbolEffect(enabled: !reduceMotion))
                     Text("Swipe up")
                         .font(.caption2)
                         .foregroundStyle(Config.Brand.readableTertiaryText)
@@ -22,7 +23,24 @@ struct SwipeHintOverlay: View {
         }
         .task {
             try? await Task.sleep(for: .seconds(2))
-            withAnimation(.easeOut(duration: 0.6)) { visible = false }
+            if reduceMotion {
+                visible = false
+            } else {
+                withAnimation(.easeOut(duration: 0.6)) { visible = false }
+            }
+        }
+    }
+}
+
+private struct ConditionalPulseSymbolEffect: ViewModifier {
+    let enabled: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if enabled {
+            content.symbolEffect(.pulse, options: .nonRepeating)
+        } else {
+            content
         }
     }
 }

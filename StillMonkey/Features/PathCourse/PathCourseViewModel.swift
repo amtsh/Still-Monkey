@@ -13,6 +13,7 @@ final class PathCourseViewModel {
 
     private let service: any OpenRouterServing
     private let userDefaults: UserDefaults
+    private var persistRecentCoursesTask: Task<Void, Never>?
 
     private static let recentCoursesKey = "pathRecentCourses"
     private static let lastAccessedCourseKey = "pathLastAccessedCourseID"
@@ -78,7 +79,9 @@ final class PathCourseViewModel {
                 apiKey: apiKey,
                 maxTokens: 2000
             )
-            let snapshot = try PathPayloadParser.parseCourseSnapshot(from: content, topic: trimmedTopic)
+            let snapshot = try await Task.detached(priority: .userInitiated) {
+                try PathPayloadParser.parseCourseSnapshot(from: content, topic: trimmedTopic)
+            }.value
             loadCourse(snapshot)
         } catch {
             self.error = "Could not build the lesson path. Try again."
@@ -127,11 +130,13 @@ final class PathCourseViewModel {
                 apiKey: apiKey,
                 maxTokens: 2200
             )
-            let newLessons = try PathPayloadParser.parseAdditionalLessons(
-                from: content,
-                startingOrder: maxOrder,
-                existingLessonIDs: existingIDs
-            )
+            let newLessons = try await Task.detached(priority: .userInitiated) {
+                try PathPayloadParser.parseAdditionalLessons(
+                    from: content,
+                    startingOrder: maxOrder,
+                    existingLessonIDs: existingIDs
+                )
+            }.value
 
             course.lessons.append(contentsOf: newLessons)
             course.lessons.sort { $0.order < $1.order }
@@ -170,7 +175,7 @@ final class PathCourseViewModel {
             course = nil
         }
 
-        persistRecentCourses()
+        persistRecentCoursesImmediate()
     }
 
     func accessState(for lesson: PathLessonSummary) -> PathLessonAccessState {
@@ -244,7 +249,9 @@ final class PathCourseViewModel {
             apiKey: apiKey,
             maxTokens: 3200
         )
-        let progress = try PathPayloadParser.parseLessonProgress(from: content, lesson: lesson)
+        let progress = try await Task.detached(priority: .userInitiated) {
+            try PathPayloadParser.parseLessonProgress(from: content, lesson: lesson)
+        }.value
 
         course.currentLessonID = lessonID
         course.upsertLessonProgress(progress)
@@ -327,7 +334,7 @@ final class PathCourseViewModel {
         userDefaults.set(updatedSnapshot.id, forKey: Self.lastAccessedCourseKey)
         lastAccessedCourseID = updatedSnapshot.id
         course = updatedSnapshot
-        persistRecentCourses()
+        schedulePersistRecentCourses()
     }
 
     private func loadRecentCourses() -> [PathCourseSnapshot] {
@@ -341,7 +348,16 @@ final class PathCourseViewModel {
         }
     }
 
-    private func persistRecentCourses() {
+    private func schedulePersistRecentCourses() {
+        persistRecentCoursesTask?.cancel()
+        persistRecentCoursesTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled else { return }
+            persistRecentCoursesImmediate()
+        }
+    }
+
+    private func persistRecentCoursesImmediate() {
         guard let data = try? JSONEncoder().encode(recentCourses) else { return }
         userDefaults.set(data, forKey: Self.recentCoursesKey)
     }

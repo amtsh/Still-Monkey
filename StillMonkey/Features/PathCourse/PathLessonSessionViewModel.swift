@@ -18,6 +18,9 @@ final class PathLessonSessionViewModel {
 
     private let courseViewModel: PathCourseViewModel
     private var hasLoaded = false
+    private var layoutCacheKey: (Int, UUID?, String) = (0, nil, "")
+    private var cachedPagesStorage: [PageID] = []
+    private var cachedChapterTitlesStorage: [Int: String] = [:]
 
     init(courseViewModel: PathCourseViewModel, lessonID: String) {
         self.courseViewModel = courseViewModel
@@ -44,19 +47,34 @@ final class PathLessonSessionViewModel {
         progress?.quizQuestions ?? []
     }
 
-    var chapterTitlesByIndex: [Int: String] {
+    var reelsChangeToken: String {
+        "\(reels.count)-\(reels.last.map { $0.id.uuidString } ?? "")"
+    }
+
+    private func rebuildCachesIfNeeded() {
+        let qKey = quizQuestions.map(\.id).joined(separator: ",")
+        let key = (reels.count, reels.last?.id, qKey)
+        if key == layoutCacheKey { return }
+        layoutCacheKey = key
         let pairs: [(Int, String)] = reels.compactMap { reel in
             guard case let .chapterTitle(index, title) = reel.content else { return nil }
             return (index, title)
         }
-        return Dictionary(pairs, uniquingKeysWith: { _, new in new })
-    }
-
-    var pages: [PageID] {
+        cachedChapterTitlesStorage = Dictionary(pairs, uniquingKeysWith: { _, new in new })
         var pageIDs = reels.map { PageID.reel($0.id) }
         pageIDs.append(contentsOf: quizQuestions.map { PageID.quiz($0.id) })
         pageIDs.append(.result)
-        return pageIDs
+        cachedPagesStorage = pageIDs
+    }
+
+    var chapterTitlesByIndex: [Int: String] {
+        rebuildCachesIfNeeded()
+        return cachedChapterTitlesStorage
+    }
+
+    var pages: [PageID] {
+        rebuildCachesIfNeeded()
+        return cachedPagesStorage
     }
 
     var progress: PathLessonProgress? {

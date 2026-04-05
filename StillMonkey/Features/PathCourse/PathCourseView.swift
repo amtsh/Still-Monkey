@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PathCourseView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var viewModel: PathCourseViewModel
     var onOpenLesson: (String) -> Void
 
@@ -195,7 +196,7 @@ struct PathCourseView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(state == .locked)
-                .accessibilityLabel(lesson.title)
+                .accessibilityLabel(accessibilityLessonLabel(lesson: lesson, state: state))
 
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -252,6 +253,7 @@ struct PathCourseView: View {
             ProgressView()
                 .tint(.white)
                 .scaleEffect(1.2)
+                .accessibilityLabel("Building lesson path")
             Text("Building your path ...")
                 .font(.headline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)
@@ -287,7 +289,7 @@ struct PathCourseView: View {
             Text("No lesson path yet")
                 .font(.headline)
                 .foregroundStyle(.white)
-            Text("Search a topic from the home screen in Path mode to create a vertical lesson map.")
+            Text("Search for a topic in Path mode to create a vertical lesson map.")
                 .font(.subheadline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)
         }
@@ -302,9 +304,18 @@ struct PathCourseView: View {
 
         Task { @MainActor in
             await Task.yield()
-            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+            withAnimation(reduceMotion ? .none : .spring(response: 0.55, dampingFraction: 0.82)) {
                 proxy.scrollTo(target, anchor: .center)
             }
+        }
+    }
+
+    private func accessibilityLessonLabel(lesson: PathLessonSummary, state: PathLessonAccessState) -> String {
+        switch state {
+        case .locked:
+            return "\(lesson.title), locked"
+        case .unlocked, .current, .completed:
+            return lesson.title
         }
     }
 

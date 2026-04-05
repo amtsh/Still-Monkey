@@ -25,7 +25,7 @@ private enum ReelFeedItem: Identifiable {
 struct ReelsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let viewModel: TopicViewModel
+    let viewModel: ReelFeedViewModel
     let bookmarkStore: BookmarkStore
     @State private var currentScrollID: ReelFeedItemID?
     @State private var hasShownSwipeHint = false
@@ -87,7 +87,7 @@ struct ReelsView: View {
                 storedReel: StoredReel(from: reel),
                 chapterTitle: chapterTitle
             )
-            let title = displayTitleForFeedReel(reel, chapterTitle: chapterTitle)
+            let title = reel.displayBookmarkTitle(chapterTitle: chapterTitle)
             return BookmarkEntry(
                 stableKey: stableKey,
                 displayTitle: title,
@@ -117,18 +117,6 @@ struct ReelsView: View {
         .accessibilityLabel(isOn ? "Remove bookmark" : "Bookmark this page")
     }
 
-    private func displayTitleForFeedReel(_ reel: Reel, chapterTitle: String?) -> String {
-        if let chapterTitle, !chapterTitle.isEmpty { return chapterTitle }
-        switch reel.content {
-        case .chapterTitle(_, let title):
-            return title
-        case .content(_, let text):
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.count <= 56 { return trimmed }
-            return String(trimmed.prefix(56)) + "…"
-        }
-    }
-
     var body: some View {
         AppScreenCanvas(wash: .none) {
             if viewModel.reels.isEmpty {
@@ -143,7 +131,12 @@ struct ReelsView: View {
                 loadingStrip
             }
         }
-        .animation(reduceMotion ? .default : .spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
+        .transaction { transaction in
+            if reduceMotion {
+                transaction.disablesAnimations = true
+            }
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.reels.isEmpty)
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .appBlendedNavigationBar()
@@ -193,6 +186,11 @@ struct ReelsView: View {
             applyInitialPositionIfNeeded()
             revealProgressBarAfterRestore()
             syncMaxVisitedSlideIndex()
+        }
+        .onDisappear {
+            if viewModel.isLoading {
+                viewModel.cancelGeneration()
+            }
         }
         .onChange(of: currentScrollID) { _, newValue in
             switch newValue {
@@ -272,7 +270,7 @@ struct ReelsView: View {
         .scrollContentBackground(.hidden)
         .clipShape(Rectangle())
         .clipped()
-        .onChange(of: viewModel.reels.map(\.id)) { _, _ in
+        .onChange(of: viewModel.reelsChangeToken) { _, _ in
             maxVisitedSlideIndex = 0
             isRestoringPosition = true
             applyInitialPositionIfNeeded()
@@ -425,104 +423,5 @@ struct ReelsView: View {
 
     private func handleBack() {
         dismiss()
-    }
-}
-
-// MARK: - Learn end screen (Learn mode only)
-
-private struct LearnModeEndScreenView: View {
-    let topicTitle: String
-    let totalSegments: Int
-    let currentIndex: Int
-    let showsProgressBar: Bool
-    let isLoading: Bool
-    let progressAccent: Color
-    let onGoDeeper: () -> Void
-    let onDone: () -> Void
-
-    @State private var didEmitSuccessHaptic = false
-
-    var body: some View {
-        ZStack {
-            AppScreenBackground.standard
-
-            VStack(spacing: 20) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 58, weight: .bold))
-                    .foregroundStyle(progressAccent)
-                    .accessibilityHidden(true)
-
-                Text("End of lesson")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .accessibilityAddTraits(.isHeader)
-
-                VStack(spacing: 10) {
-                    Text(topicTitle)
-                        .font(.system(size: ReadingTypography.bodySize, weight: .semibold))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .multilineTextAlignment(.center)
-
-                    Text(
-                        "You can continue to learn more about this topic by going deeper."
-                    )
-                    .font(.system(size: ReadingTypography.bodySize))
-                    .foregroundStyle(Config.Brand.readableSecondaryText)
-                    .lineSpacing(ReadingTypography.bodyLineSpacing)
-                    .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, 24)
-
-                VStack(spacing: 12) {
-                    Button {
-                        HapticsFeedback.impactMedium()
-                        onGoDeeper()
-                    } label: {
-                        HStack(spacing: 8) {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                                    .scaleEffect(0.9)
-                            }
-                            Text(isLoading ? "Loading …" : "Go deeper")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(Config.Brand.startButtonFill)
-                    .foregroundStyle(Config.Brand.startButtonTextColor)
-                    .disabled(isLoading)
-                    .accessibilityLabel(isLoading ? "Generating deeper lesson" : "Go deeper on this topic")
-
-                    Button("Close") {
-                        HapticsFeedback.impactSoft()
-                        onDone()
-                    }
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Config.Brand.readableSecondaryText)
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Close, close feed")
-                }
-                .padding(.horizontal, 24)
-            }
-            .padding(.bottom, showsProgressBar ? 52 : 0)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .overlay(alignment: .bottom) {
-            ReelProgressBar(totalSegments: totalSegments, currentIndex: currentIndex, progressAccent: progressAccent)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-                .opacity(showsProgressBar ? 1 : 0)
-                .allowsHitTesting(false)
-        }
-        .accessibilityElement(children: .contain)
-        .onAppear {
-            guard !didEmitSuccessHaptic else { return }
-            didEmitSuccessHaptic = true
-            HapticsFeedback.lessonSuccess()
-        }
     }
 }

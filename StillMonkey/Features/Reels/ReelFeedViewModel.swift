@@ -1,16 +1,9 @@
-//
-//  TopicViewModel.swift
-//  Still Monkey
-//
-//  Created by Amit Shinde on 2026-03-04.
-//
-
 import Foundation
 import Observation
 
 @Observable
 @MainActor
-final class TopicViewModel {
+final class ReelFeedViewModel {
     var topic: String = ""
     var contentMode: ContentMode = .learn
     var reels: [Reel] = []
@@ -20,18 +13,33 @@ final class TopicViewModel {
     var lastAccessedRecentID: String?
     var pendingStartReelID: Reel.ID?
 
+    /// Stable for `onChange` without allocating `[UUID]` each evaluation.
+    var reelsChangeToken: String {
+        "\(reels.count)-\(reels.last.map { $0.id.uuidString } ?? "")"
+    }
+
+    private var chapterTitlesCacheKey: (Int, UUID?) = (0, nil)
+    private var cachedChapterTitlesByIndex: [Int: String] = [:]
+
     var chapterTitlesByIndex: [Int: String] {
-        let pairs: [(Int, String)] = reels.compactMap { reel in
-            guard case let .chapterTitle(index, title) = reel.content else { return nil }
-            return (index, title)
+        let key = (reels.count, reels.last?.id)
+        if key != chapterTitlesCacheKey {
+            chapterTitlesCacheKey = key
+            let pairs: [(Int, String)] = reels.compactMap { reel in
+                guard case let .chapterTitle(index, title) = reel.content else { return nil }
+                return (index, title)
+            }
+            cachedChapterTitlesByIndex = Dictionary(pairs, uniquingKeysWith: { _, new in new })
         }
-        return Dictionary(pairs, uniquingKeysWith: { _, new in new })
+        return cachedChapterTitlesByIndex
     }
 
     private let service: any OpenRouterServing
     private let userDefaults: UserDefaults
     private var streamBuffer = ""
     private var parser = ReelContentParser()
+    private var generationEpoch = 0
+    private var reelIDPersistTask: Task<Void, Never>?
 
     private static let recentSnapshotsKey = "recentContentSnapshots"
     private static let lastAccessedRecentKey = "lastAccessedRecentSnapshotID"
@@ -53,9 +61,17 @@ final class TopicViewModel {
         }
     }
 
+    func cancelGeneration() {
+        generationEpoch += 1
+        isLoading = false
+    }
+
     /// - Parameter topicOverride: When set (e.g. captured before search UI clears `topic`), used instead of `topic` so generation still runs.
     /// - Parameter learnDeeper: Learn mode only—second pass on the same topic with a deeper prompt; uses current reels’ chapter titles before they are cleared.
     func generateContent(topicOverride: String? = nil, learnDeeper: Bool = false) async {
+        generationEpoch += 1
+        let epoch = generationEpoch
+
         let trimmedTopic = (topicOverride ?? topic).trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTopic.isEmpty else { return }
         topic = trimmedTopic
@@ -92,7 +108,11 @@ final class TopicViewModel {
         }
 
         isLoading = true
-        defer { isLoading = false }
+        defer {
+            if generationEpoch == epoch {
+                isLoading = false
+            }
+        }
 
         var lastError: Error?
         let appendAsNextChapter = learnDeeper && contentMode == .learn
@@ -124,6 +144,8 @@ final class TopicViewModel {
                     apiKey: apiKey
                 )
                 for try await token in stream {
+                    try Task.checkCancellation()
+                    guard generationEpoch == epoch else { break }
                     if keepExistingReelsVisible {
                         localStreamBuffer += token
                         processBuffer(
@@ -136,6 +158,7 @@ final class TopicViewModel {
                         processBuffer(streamBuffer: &streamBuffer, parser: &parser, reels: &reels)
                     }
                 }
+                guard generationEpoch == epoch else { return }
                 if keepExistingReelsVisible {
                     flushBuffer(
                         streamBuffer: &localStreamBuffer,
@@ -170,7 +193,7 @@ final class TopicViewModel {
                     HapticsFeedback.generationSucceeded()
                     return
                 }
-                lastError = TopicGenerationError.emptyOrUnparseableResponse
+                lastError = ReelFeedGenerationError.emptyOrUnparseableResponse
                 if attempt < LLMRetry.maxAttempts - 1 {
                     await LLMRetry.delayBetweenAttempts()
                     continue
@@ -186,7 +209,7 @@ final class TopicViewModel {
         error = Self.userFacingStreamError(lastError)
     }
 
-    private enum TopicGenerationError: LocalizedError {
+    private enum ReelFeedGenerationError: LocalizedError {
         case emptyOrUnparseableResponse
 
         var errorDescription: String? {
@@ -201,7 +224,7 @@ final class TopicViewModel {
         guard let error else {
             return "Something went wrong. Please try again."
         }
-        if error is TopicGenerationError {
+        if error is ReelFeedGenerationError {
             return "Something went wrong. Please try again."
         }
         if let urlError = error as? URLError {
@@ -294,7 +317,12 @@ final class TopicViewModel {
             let reelID
         else { return }
         lastViewedReelIDsBySnapshotID[snapshotID] = reelID.uuidString
-        userDefaults.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+        reelIDPersistTask?.cancel()
+        reelIDPersistTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            userDefaults.set(lastViewedReelIDsBySnapshotID, forKey: Self.recentSnapshotLastViewedReelIDsKey)
+        }
     }
 
     func consumePendingStartReelID() -> Reel.ID? {

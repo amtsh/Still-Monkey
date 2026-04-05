@@ -41,24 +41,12 @@ struct PathLessonSessionView: View {
             )
             return BookmarkEntry(
                 stableKey: stableKey,
-                displayTitle: displayTitleForPathReel(reel, chapterTitle: chapterTitle),
+                displayTitle: reel.displayBookmarkTitle(chapterTitle: chapterTitle),
                 displaySubtitle: topicTitle,
                 payload: .pathReel(payload)
             )
         case .quiz, .result:
             return nil
-        }
-    }
-
-    private func displayTitleForPathReel(_ reel: Reel, chapterTitle: String?) -> String {
-        if let chapterTitle, !chapterTitle.isEmpty { return chapterTitle }
-        switch reel.content {
-        case .chapterTitle(_, let title):
-            return title
-        case .content(_, let text):
-            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.count <= 56 { return trimmed }
-            return String(trimmed.prefix(56)) + "…"
         }
     }
 
@@ -150,7 +138,7 @@ struct PathLessonSessionView: View {
         .onChange(of: viewModel.pages) { _, _ in
             applyInitialPositionIfNeeded()
         }
-        .onChange(of: viewModel.reels.map(\.id)) { _, _ in
+        .onChange(of: viewModel.reelsChangeToken) { _, _ in
             maxVisitedSlideIndex = 0
             syncMaxVisitedSlideIndex()
         }
@@ -287,6 +275,7 @@ struct PathLessonSessionView: View {
             ProgressView()
                 .tint(.white)
                 .scaleEffect(1.2)
+                .accessibilityLabel("Loading lesson")
             Text("Loading lesson ...")
                 .font(.headline)
                 .foregroundStyle(Config.Brand.readableSecondaryText)

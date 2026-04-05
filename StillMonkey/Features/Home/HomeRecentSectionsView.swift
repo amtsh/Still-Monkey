@@ -33,9 +33,11 @@ struct HomeRecentSectionsView: View {
                         isEditingHistory.toggle()
                     }
                 }
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Config.Brand.readableSecondaryText)
                 .buttonStyle(.plain)
+                .frame(minWidth: UITouchTarget.minimum, minHeight: UITouchTarget.minimum)
+                .contentShape(Rectangle())
             }
 
             VStack(spacing: 0) {
